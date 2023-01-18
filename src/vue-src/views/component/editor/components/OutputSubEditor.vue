@@ -40,32 +40,34 @@
           <span>子项标识</span>
         </a-col>
       </a-row>
-      <a-row v-for="(item, index) in children" :key="index" :gutter="4" class="mb-5px">
-        <a-col :span="7">
-          <TypeSelector
-            v-model:value="item.type"
-            :is-basic="true"
-            @custom-type-change="(type) => customTypeChange(item, type)"
-          />
-        </a-col>
-        <a-col :span="7">
-          <a-input v-model:value="item.name" :maxlength="10" placeholder="子项名称" />
-        </a-col>
-        <a-col :span="7">
-          <a-input v-model:value="item.key" placeholder="子项标识" />
-        </a-col>
-        <a-col :span="2" class="button-right">
-          <a-button
-            type="primary"
-            class="float-right"
-            danger
-            shape="circle"
-            @click="delOutputChild(index)"
-          >
-            <minus-outlined />
-          </a-button>
-        </a-col>
-      </a-row>
+      <template v-for="(item, index) in children" :key="index">
+        <a-row :gutter="4" class="mb-5px">
+          <a-col :span="7">
+            <TypeSelector
+              v-model:value="item.type"
+              @custom-type-change="(type) => customTypeChange(item, type)"
+            />
+          </a-col>
+          <a-col :span="7">
+            <a-input v-model:value="item.name" :maxlength="10" placeholder="子项名称" />
+          </a-col>
+          <a-col :span="7">
+            <a-input v-model:value="item.key" placeholder="子项标识" />
+          </a-col>
+          <a-col :span="2" class="button-right">
+            <a-button
+              type="primary"
+              class="float-right"
+              danger
+              shape="circle"
+              @click="delOutputChild(index)"
+            >
+              <minus-outlined />
+            </a-button>
+          </a-col>
+        </a-row>
+        <!-- <output-sub-editor ref="subItem" :output="item" /> -->
+      </template>
       <a-button type="primary" class="w-full mt-1" @click="addOutputChild">
         <plus-outlined />
       </a-button>

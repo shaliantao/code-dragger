@@ -14,9 +14,19 @@ const studio: AppRouteModule = {
   },
   children: [
     {
+      path: 'appStore',
+      name: 'AppStore',
+      component: () => import('/@/views/app/store/AppStore.vue'),
+      meta: {
+        // affix: true,
+        title: '应用市场',
+        ignoreKeepAlive: true,
+      },
+    },
+    {
       path: 'appList',
       name: 'AppList',
-      component: () => import('../../../views/app/list/AppList.vue'),
+      component: () => import('/@/views/app/list/AppList.vue'),
       meta: {
         // affix: true,
         title: '应用列表',
@@ -26,7 +36,7 @@ const studio: AppRouteModule = {
     {
       path: 'appEditor/:uuid',
       name: 'AppEditor',
-      component: () => import('../../../views/app/editor/AppEditor.vue'),
+      component: () => import('/@/views/app/editor/AppEditor.vue'),
       props: (route) => ({ uuid: route.params.uuid }),
       meta: {
         // affix: true,
@@ -38,7 +48,7 @@ const studio: AppRouteModule = {
     {
       path: 'componentEditor/:group/:func',
       name: 'ComponentEditor',
-      component: () => import('../../../views/component/editor/ComponentEditor.vue'),
+      component: () => import('/@/views/component/editor/ComponentEditor.vue'),
       props: (route) => ({ group: route.params.group, func: route.params.func }),
       meta: {
         // affix: true,
@@ -50,7 +60,7 @@ const studio: AppRouteModule = {
     {
       path: 'groupList',
       name: 'GroupList',
-      component: () => import('../../../views/group/list/GroupList.vue'),
+      component: () => import('/@/views/group/list/GroupList.vue'),
       meta: {
         title: '分组列表',
         ignoreKeepAlive: true,
@@ -59,12 +69,30 @@ const studio: AppRouteModule = {
     {
       path: 'groupEditor/:groupKey',
       name: 'GroupEditor',
-      component: () => import('../../../views/group/editor/GroupEditor.vue'),
+      component: () => import('/@/views/group/editor/GroupEditor.vue'),
       props: (route) => ({ groupKey: route.params.groupKey }),
       meta: {
         title: '分组编辑器',
         hideMenu: true,
         currentActiveMenu: '/studio/groupList',
+      },
+    },
+    {
+      path: 'taskList',
+      name: 'TaskList',
+      component: () => import('/@/views/task/TaskList.vue'),
+      meta: {
+        title: '执行计划',
+        ignoreKeepAlive: true,
+      },
+    },
+    {
+      path: 'userList',
+      name: 'UserList',
+      component: () => import('/@/views/user/UserList.vue'),
+      meta: {
+        title: '用户列表',
+        ignoreKeepAlive: true,
       },
     },
   ],

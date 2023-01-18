@@ -1,15 +1,15 @@
-import { ref, watch, shallowRef, Ref } from 'vue';
+import { ref, watch, shallowRef, Ref, ComputedRef } from 'vue';
 import { useDebounceFn } from '@vueuse/core';
 import componentSender from '/@/ipc/component';
 import type { InputsOutput } from '@src/platform/code/code';
 
-export function useCodeParse(code: Ref<string>) {
+export function useCodeParse(code: Ref<string> | ComputedRef<string>) {
   const alertStr = ref('Parsing...');
   const alertType = ref<'info' | 'warning'>('info');
   const ioParams = shallowRef<Nullable<InputsOutput>>(null);
   watch(
     code,
-    useDebounceFn(async (code) => {
+    useDebounceFn(async (code: string) => {
       try {
         alertStr.value = 'Parsing...';
         const res = await componentSender.parseIOParams(code);

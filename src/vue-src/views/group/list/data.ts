@@ -30,6 +30,15 @@ export const schemas: FormSchema[] = [
     defaultValue: '',
   },
   {
+    field: 'diffPlatform',
+    component: 'Switch',
+    label: '是否区分平台',
+    colProps: {
+      span: 20,
+    },
+    defaultValue: false,
+  },
+  {
     field: 'desc',
     component: 'InputTextArea',
     label: '描述',
@@ -52,16 +61,10 @@ export function getColumns(): BasicColumn[] {
     {
       title: '版本',
       dataIndex: 'version',
-      customRender: ({ text }) => {
-        return `v${text}`;
-      },
     },
     {
       title: '状态',
       dataIndex: 'published',
-      customRender: ({ text }) => {
-        return text ? '已发布' : '未发布';
-      },
     },
     {
       title: '创建时间',

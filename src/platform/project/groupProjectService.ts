@@ -12,7 +12,7 @@ import { ReadStream } from 'fs';
 export const IGroupProjectService = createDecorator<IGroupProjectService>('groupProjectService');
 
 export interface IGroupProjectService extends IProjectService<IGroupMeta> {
-  setGroupTypes(key: string, typeItem: string): Promise<void>;
+  setGroupTypes(key: string, typesArr: string[]): Promise<void>;
   getGroupTypes(folderName: string): Promise<string[]>;
   checkVersionExist(folderName: string, version: string): Promise<boolean>;
 }
@@ -29,10 +29,8 @@ export class GroupProjectService
   ) {
     super(environmentService.groupPath, environmentService.groupTmplPath, logService, fileService);
   }
-  async setGroupTypes(folderName: string, typeItem: string): Promise<void> {
+  async setGroupTypes(folderName: string, typesArr: string[]): Promise<void> {
     const typesPath = path.join(this.projectRootPath, folderName, 'types.json');
-    const typesArr = (await this.fileService.readJson(typesPath)) as string[];
-    typesArr.push(typeItem);
     await this.fileService.writeJson(typesPath, typesArr);
   }
   async getGroupTypes(folderName: string): Promise<string[]> {

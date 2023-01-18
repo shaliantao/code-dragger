@@ -4,7 +4,6 @@ import type { CreateAxiosOptions } from './axiosTransform';
 import axios from 'axios';
 import qs from 'qs';
 import FormData from 'form-data';
-import { AxiosCanceler } from './axiosCancel';
 import { cloneDeep } from 'lodash-es';
 import { ContentTypeEnum, RequestEnum } from '/@/enums/httpEnum';
 import { IHttpService } from './http';
@@ -42,8 +41,6 @@ export class HttpService extends Disposable implements IHttpService {
    * @description: Interceptor configuration 拦截器配置
    */
   private setupInterceptors(axiosInstance: AxiosInstance) {
-    const axiosCanceler = new AxiosCanceler();
-
     // Request interceptor configuration processing
     axiosInstance.interceptors.request.use(
       (config: AxiosRequestConfig) => {
@@ -73,6 +70,7 @@ export class HttpService extends Disposable implements IHttpService {
       },
       async (error) => {
         const response = error.response;
+        // 授权错误
         if (response?.status === 401) {
           if (!this.authService.accessToken) {
             this._onLogout.fire();
@@ -112,6 +110,10 @@ export class HttpService extends Disposable implements IHttpService {
               });
             });
           }
+        }
+
+        // 传参错误
+        if (response?.status === 400) {
         }
 
         return Promise.reject(error);

@@ -34,17 +34,17 @@ export class ComponentManager {
       auth: 'slt',
     };
     const metaInfo = { ...initialMetaInfo(uuid), ...info };
-    const groupModel = this.groupService.localGroupMap.get(info.group);
+    const groupModel = this.groupService.editableGroupMap.get(info.group);
     await groupModel?.createComponents(packageInfo, metaInfo);
     return uuid;
   }
   private getComponentModel(group: string, func: string) {
-    const groupModel = this.groupService.localGroupMap.get(group);
+    const groupModel = this.groupService.editableGroupMap.get(group);
     const compModel = groupModel?.componentMap.get(func);
     return compModel!;
   }
   async delComponent(group: string, func: string) {
-    const groupModel = this.groupService.localGroupMap.get(group);
+    const groupModel = this.groupService.editableGroupMap.get(group);
     await groupModel?.deleteComponent(func);
   }
   async saveCode(group: string, func: string, codeStr: string) {

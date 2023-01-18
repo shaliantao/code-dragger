@@ -48,7 +48,9 @@
   import Dragger from '/@/components/Dragger';
   import { createAsyncComponent } from '/@/utils/factory/createAsyncComponent';
   import CodeInfoEditor from './components/CodeInfoEditor.vue';
-  import { useCodeParse } from './hooks/useCodeParse';
+  import { useCodeParse } from '/@/hooks/code/useCodeParse';
+
+  const MonacoEditor = createAsyncComponent(() => import('/@/components/MonacoEditor'));
 
   const props = defineProps({
     group: {
@@ -61,7 +63,6 @@
     },
   });
 
-  const MonacoEditor = createAsyncComponent(() => import('/@/components/MonacoEditor'));
   const { group, func } = toRefs(props);
   const path = ref('');
   const activeKey = '1';

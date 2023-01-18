@@ -5,7 +5,7 @@
         <a-button @click="createComponent">创建组件</a-button>
       </div>
       <div class="flex gap-2">
-        <a-button @click="handleSubmit">保存</a-button>
+        <a-button @click="handleSubmit" :disabled="saveDisabled">保存</a-button>
       </div>
     </div>
     <div class="flex h-[calc(100%-40px)]">
@@ -30,7 +30,7 @@
             </template>
           </BasicTable>
         </div>
-        <Dragger direction="X" :next-max="500" :next-min="200" />
+        <Dragger direction="X" :next-max="500" :next-min="200" :next-initial="200" />
         <Tabs class="tabs" v-model:value="activeKey">
           <Tabs.TabPane key="1" tab="终端">
             <Terminal :path="path" />

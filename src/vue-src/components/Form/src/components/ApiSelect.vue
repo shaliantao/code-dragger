@@ -75,9 +75,12 @@
 
         return unref(options).reduce((prev, next: Recordable) => {
           if (next) {
-            const value = next[valueField];
+            const labelFieldArr = labelField.split('.');
+            const valFieldArr = valueField.split('.');
+            const value = valFieldArr.reduce((prev, next) => prev[next], next);
+            const label = labelFieldArr.reduce((prev, next) => prev[next], next);
             prev.push({
-              label: next[labelField],
+              label: label,
               value: numberToString ? `${value}` : value,
               ...omit(next, [labelField, valueField]),
             });

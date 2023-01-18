@@ -20,18 +20,17 @@
     </div>
   </div>
   <div class="w-100 text-right">
-    <a-button @click="saveApp">保存应用</a-button>
+    <a-button @click="saveApp()">保存</a-button>
   </div>
 </template>
 
 <script lang="ts" setup>
-  import { ref, toRaw, onUnmounted } from 'vue';
+  import { ref, onUnmounted } from 'vue';
   import { PoweroffOutlined, PlayCircleOutlined, PauseCircleOutlined } from '@ant-design/icons-vue';
-  import { CommandNode } from '@src/platform/common/types';
   import { APP_RUN_STATE } from '@src/platform/executor/executor';
   import executorSender from '/@/ipc/executor';
-  import appSender from '/@/ipc/app';
   import { useBtnShowState } from '/@/views/app/editor/hooks/useBtnShowState';
+  import { CommandNode } from '@src/platform/common/types';
 
   const props = defineProps({
     uuid: {
@@ -39,8 +38,8 @@
       required: true,
     },
     commandFlow: {
-      type: [Array, null] as PropType<Nullable<CommandNode[]>>,
-      default: () => [],
+      type: Array as PropType<CommandNode[]>,
+      required: true,
     },
   });
 
@@ -49,30 +48,17 @@
   const runState = ref<APP_RUN_STATE>(APP_RUN_STATE.INITIAL);
 
   const event = executorSender.onRunStateChange((state) => {
-    console.log('onRunStateChange');
     runState.value = state;
   });
 
   const { showStart, showStop, showPause, showResume } = useBtnShowState(runState);
 
   async function saveApp() {
-    try {
-      if (props.commandFlow) {
-        emits('on-save');
-        await appSender.saveFlow(props.uuid, toRaw(props.commandFlow));
-      }
-    } catch (err) {
-      console.log(`error${err}`);
-    }
+    emits('on-save');
   }
 
   async function startApp() {
-    try {
-      await saveApp();
-      await executorSender.start(props.uuid);
-    } catch (err) {
-      console.log(`error${err}`);
-    }
+    await executorSender.startDevApp(props.uuid, props.commandFlow);
   }
   async function stopApp() {
     try {

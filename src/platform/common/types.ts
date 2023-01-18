@@ -76,13 +76,15 @@ export interface CommandCommon {
 }
 export interface CodeCommand extends CommandCommon {
   type: CommandType.Code;
-  codePath: string;
+  formType: CommandType.Code;
+  code: string;
+  errorHandling: ErrorHandling;
   inputs?: InputArg[];
   output?: OutputArg;
 }
 
 export interface ComponentCommand extends CommandCommon {
-  formType: CommandType;
+  formType: CommandType.Component;
   type: CommandType.Component;
   componentId: string;
   group: string;

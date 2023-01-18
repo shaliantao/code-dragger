@@ -1,6 +1,7 @@
 import { ErrorHandling } from '@src/platform/common/enum';
 import { IComponentMeta } from '@src/platform/component/component';
 import { IAppMeta } from '@src/platform/app/app';
+import { InputArg } from '../common/types';
 export interface IContext {
   [key: string]: string | number | boolean;
 }
@@ -24,6 +25,7 @@ export enum APP_RUN_STATE {
 export enum COMMAND_EXEC_STATUS {
   SUCCESS = 0,
   ERROR = 1,
+  LOG = 2,
 }
 
 export type APP_RUN_RESULT = Exclude<
@@ -33,11 +35,18 @@ export type APP_RUN_RESULT = Exclude<
 
 export interface IAppStart {
   startTime: number;
+}
+
+export interface IAppStartWithMeta extends IAppStart {
   meta: IAppMeta;
 }
+
 export interface IAppData {
   endTime: number;
   state: APP_RUN_RESULT;
+}
+
+export interface IAppDataWithMeta extends IAppData {
   meta: IAppMeta;
 }
 
@@ -48,6 +57,7 @@ export interface ICommandInfo {
 
 export interface ICommandStart {
   startTime: number;
+  inputs: InputArg[];
   info: ICommandInfo;
   meta: IComponentMeta;
 }
@@ -72,4 +82,19 @@ export interface ICommandDataError {
   };
 }
 
-export type ICommandData = ICommandDataSuccess | ICommandDataError;
+export interface ICommandDataLog {
+  code: COMMAND_EXEC_STATUS.LOG;
+  data: {
+    time: number;
+    info: string;
+  };
+}
+
+export type ICommandData = ICommandDataSuccess | ICommandDataError | ICommandDataLog;
+
+export interface IPrint {
+  onAppStart: (data: IAppStartWithMeta) => void;
+  onAppStateChange: (state: APP_RUN_STATE) => void;
+  onCommandStart: (data: ICommandStart) => void;
+  onCommandData: (data: ICommandData) => void;
+}

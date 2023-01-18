@@ -1,7 +1,7 @@
 <template>
   <PageWrapper class="h-full" contentClass="h-full">
     <div class="flex p-2 h-40px">
-      <OperationBar :uuid="uuid" :command-flow="commandFlow" @on-save="onSave" />
+      <OperationBar :uuid="uuid" :command-flow="commandFlow" @on-save="saveApp" />
     </div>
     <div class="flex h-[calc(100%-40px)]">
       <div class="w-200px h-full overflow-y-auto border">
@@ -12,10 +12,17 @@
         <div class="flex-1">
           <CommandList ref="commandListRef" :uuid="uuid" />
         </div>
-        <Dragger direction="X" :prev-min="400" :next-min="200" />
-        <div>
-          <Terminal :path="path" />
-        </div>
+        <Dragger direction="X" :prev-min="200" :next-min="300" />
+        <Tabs class="tabs" v-model:value="activeKey">
+          <Tabs.TabPane key="1" tab="终端">
+            <Terminal :path="path" />
+          </Tabs.TabPane>
+          <Tabs.TabPane key="2" tab="元素抓取" />
+          <Tabs.TabPane key="3" tab="依赖">
+            <!-- <Description @register="register" class="my-4" /> -->
+          </Tabs.TabPane>
+          <Tabs.TabPane key="4" tab="版本" />
+        </Tabs>
       </div>
       <Dragger direction="Y" :next-min="300" :next-max="500" />
       <div>
@@ -31,6 +38,7 @@
 </script>
 <script lang="ts" setup>
   import { ref, unref, computed, toRef, onMounted } from 'vue';
+  import { Tabs } from 'ant-design-vue';
   import Terminal from '/@/components/Terminal';
   import CommandMenu from './components/CommandMenu.vue';
   import OperationBar from './components/OperationBar.vue';
@@ -49,17 +57,18 @@
 
   const uuid = toRef(props, 'uuid');
   const path = ref('');
+  const activeKey = '1';
 
   const commandListRef = ref();
   const infoEditor = ref();
 
   const commandFlow = computed(() => {
-    return unref(commandListRef)?.commandFlow || null;
+    return unref(commandListRef)?.commandFlow || [];
   });
 
-  function onSave() {
+  async function saveApp() {
     const { form } = infoEditor.value.getValue();
-    appSender.setAppInfo(uuid.value, form);
+    await appSender.saveApp(unref(uuid), unref(commandFlow), form);
   }
   async function getPath() {
     path.value = await appSender.getWorkspace(unref(uuid));
@@ -68,4 +77,3 @@
     getPath();
   });
 </script>
-<style></style>

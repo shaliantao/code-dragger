@@ -105,7 +105,7 @@
   const event1 = executorSender.onCommandStart(({ info }) => {
     currId.value = info?.id;
   });
-  const event2 = executorSender.onAppData(() => {
+  const event2 = executorSender.onAppEnd(() => {
     currId.value = '';
   });
 

@@ -38,16 +38,10 @@
   import { useRouter } from 'vue-router';
   import { PlusOutlined } from '@ant-design/icons-vue';
   import groupSender from '/@/ipc/group';
-  import { valueTypeArr, basicTypeArr } from '/@/utils/mapping';
+  import { valueTypeArr } from '/@/utils/mapping';
 
   const { currentRoute } = useRouter();
   const { group } = unref(currentRoute)?.params || {};
-  const props = defineProps({
-    isBasic: {
-      type: Boolean,
-      default: false,
-    },
-  });
   const emits = defineEmits(['custom-type-change']);
   const customArr = ref<string[]>([]);
   const searchVal = ref('');
@@ -58,7 +52,7 @@
     getTypes();
   });
   getTypes();
-  const defaultArr = props.isBasic ? basicTypeArr : valueTypeArr;
+  const defaultArr = valueTypeArr;
 
   const defaultTypes = defaultArr.map((item) => ({ label: item, value: item }));
 

@@ -17,6 +17,7 @@
     </template>
 
     <ScrollContainer
+      view-style="height: 100%"
       :style="getScrollContentStyle"
       v-loading="getLoading"
       :loading-tip="loadingText || t('common.loadingText')"

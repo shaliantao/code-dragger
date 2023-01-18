@@ -127,6 +127,6 @@ export class EnvironmentService implements IEnvironmentService {
     return path.join(this.templatePath, 'groupTmpl');
   }
   get logLevel(): string | undefined {
-    return this._args.log || process.env.VITE_LOG_LEVEL;
+    return this._args.log || import.meta.env.VITE_LOG_LEVEL;
   }
 }

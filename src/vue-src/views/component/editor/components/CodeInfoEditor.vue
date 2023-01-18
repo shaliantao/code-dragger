@@ -91,15 +91,16 @@
   /**
    * TODO 计划将类型使用下拉菜单的形式展示，并支持动态增减
    */
-  import { ref, unref, toRaw, toRefs, reactive, PropType, watch } from 'vue';
+  import { ref, unref, toRaw, toRefs, reactive, PropType, watch, watchEffect } from 'vue';
   import { Form, Card } from 'ant-design-vue';
   import { IsEnum } from '@src/platform/common/enum';
   import type { InputsOutput } from '@src/platform/code/code';
   import { useComponentInfo } from '../hooks/useComponentInfo';
-  import { useInputOutput } from '../hooks/useInputOutput';
+  import { useInputOutput } from '/@/hooks/code/useInputOutput';
   import OutputSubEditor from './OutputSubEditor.vue';
   import TypeSelector from './TypeSelector.vue';
   import { InputArg, OutputArg } from '@src/platform/common/types';
+  import componentSender from '/@/ipc/component';
 
   const props = defineProps({
     ioParams: {
@@ -118,6 +119,10 @@
 
   const { group, func, ioParams } = toRefs(props);
   const subEditorRef = ref();
+  const initialIoParams = ref<InputsOutput>({
+    inputs: null,
+    output: null,
+  });
   const form = reactive({
     name: '未命名',
     diffPlatform: false,
@@ -133,7 +138,14 @@
     }
   });
 
-  const { output, inputs } = useInputOutput(group, func, ioParams, getOutput);
+  /**
+   * 监听id变化，获取组件信息中记录的输入输出返回值
+   */
+  watchEffect(async () => {
+    initialIoParams.value = await componentSender.getIOParams(unref(group), unref(func));
+  });
+
+  const { output, inputs } = useInputOutput(initialIoParams, ioParams, getOutput);
 
   function customTypeChange(type: string, item?: Nullable<OutputArg> | InputArg) {
     item?.name === '' && (item.name = type);

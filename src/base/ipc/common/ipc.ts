@@ -1314,7 +1314,6 @@ export function createChannelSender<T>(channel: IChannel, options?: IChannelSend
             }
             try {
               const result = await channel.call(propKey, methodArgs);
-
               // 增加获取结果后的统一回调
               if (typeof options?.onResult === 'function') {
                 options?.onResult(result);
@@ -1326,7 +1325,6 @@ export function createChannelSender<T>(channel: IChannel, options?: IChannelSend
 
               return result;
             } catch (err) {
-              debugger;
               // 增加错误后的统一回调
               if (typeof options?.onError === 'function') {
                 options?.onError(err, propKey);

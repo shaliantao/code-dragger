@@ -23,11 +23,11 @@ export class FloatWindow extends Disposable {
       return;
     }
     const { width, height } = screen.getPrimaryDisplay().workAreaSize;
-    const x = width - 360;
+    const x = width - 400;
     const y = height - 100;
     this._win = new BrowserWindow({
-      width: 680,
-      height: 440,
+      width: 400,
+      height: 160,
       x: x,
       y: y,
       hasShadow: true,
@@ -52,7 +52,7 @@ export class FloatWindow extends Disposable {
     this._win.on('closed', () => (this._win = null));
     //必须加上第二个参数'normal'，否则弹窗不能按预期层级显示
     this._win.setAlwaysOnTop(true, 'normal');
-    this._win.webContents.openDevTools();
+    //this._win.webContents.openDevTools();
     if (app.isPackaged) {
       this._win.loadFile(path.join(__dirname, '../index.html/#/progress'));
     } else {

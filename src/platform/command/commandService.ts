@@ -245,7 +245,7 @@ export class CommandService extends Disposable implements ICommandService {
 
     return astArr;
   }
-  private jsonToProgramAst(jsonStr: string): t.Program {
+  private jsonToProgramAst(jsonArr: CommandNode[]): t.Program {
     const templateStr = `
     (async function () {
       %%content%%
@@ -253,7 +253,6 @@ export class CommandService extends Disposable implements ICommandService {
     })();
   `;
     try {
-      const jsonArr = JSON.parse(jsonStr);
       const astArr = this.jsonToAstArr(jsonArr);
       const requiredArr = this.getRequiredGroupAstArr();
       const program = templateToAst(templateStr, {
@@ -272,16 +271,13 @@ export class CommandService extends Disposable implements ICommandService {
     this._requiredGroupSet.clear();
     this._requiredGroupDeps.length = 0;
   }
-  jsonToCodeStr(jsonStr: string): string {
-    this.logService.info('jsonToCodeStr');
+  jsonToCodeStr(jsonArr: CommandNode[]): [string, IRequiredGroupDep[]] {
     this.clearSet();
-    const ast = this.jsonToProgramAst(jsonStr);
+    const ast = this.jsonToProgramAst(jsonArr);
     const codeStr = generate(ast).code;
-    return codeStr;
+    return [codeStr, this._requiredGroupDeps];
   }
-  get requiredGroupDeps() {
-    return this._requiredGroupDeps;
-  }
+
   dispose(): void {
     super.dispose();
     this.clearSet();

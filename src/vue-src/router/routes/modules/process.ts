@@ -1,12 +1,12 @@
 import type { AppRouteModule } from '/@/router/types';
 
-const about: AppRouteModule = {
+const progress: AppRouteModule = {
   path: '/progress',
   name: 'Progress',
   component: () => import('/@/views/progress/Progress.vue'),
   meta: {
-    title: 'process',
+    title: 'progress',
   },
 };
 
-export default about;
+export default progress;

@@ -5,6 +5,13 @@
     </div>
     <BasicTable @register="registerTable">
       <template #bodyCell="{ column, record }">
+        <template v-if="column.dataIndex === 'version'">
+          <Badge :count="`v${record.version}`" :number-style="{ backgroundColor: '#108ee9' }" />
+        </template>
+        <template v-if="column.dataIndex === 'published'">
+          <Tag v-if="record.published" color="#87d068">已发布</Tag>
+          <Tag v-else color="#A5A6A7">未发布</Tag>
+        </template>
         <template v-if="column.dataIndex === 'action'">
           <TableAction
             :actions="[
@@ -14,6 +21,11 @@
               },
               {
                 label: '发布',
+                disabled: publishDisabled,
+                onClick: handlePublish.bind(null, record),
+              },
+              {
+                label: '上架',
                 disabled: publishDisabled,
                 onClick: handlePublish.bind(null, record),
               },
@@ -37,6 +49,7 @@
   import { BasicTable, TableAction, useTable } from '/@/components/Table';
   import InfoEditor from './components/InfoEditor.vue';
   import appSender from '/@/ipc/app';
+  import { Badge, Tag } from 'ant-design-vue';
 
   import { getColumns } from './data';
   import { ref } from 'vue';
@@ -62,6 +75,7 @@
     const hide = createMessage.loading('发布中');
     await appSender.publish(id);
     publishDisabled.value = false;
+    reload();
     hide();
   }
 
@@ -85,8 +99,9 @@
     api: getAppList,
     columns: getColumns(),
     rowKey: 'id',
+    showIndexColumn: false,
     actionColumn: {
-      width: 160,
+      width: 200,
       title: '操作',
       dataIndex: 'action',
     },

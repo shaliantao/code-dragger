@@ -3,7 +3,7 @@
     v-bind="$attrs"
     @register="register"
     :title="node?.name"
-    width="50%"
+    width="60%"
     showFooter
     @close="onClose"
     @ok="onSave"

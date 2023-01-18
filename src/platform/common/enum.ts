@@ -51,3 +51,16 @@ export const enum Platform {
   Windows = 'Windows',
   Common = 'Common',
 }
+
+export const enum ExecMode {
+  Timing = 'Timing',
+  Cycle = 'Cycle',
+}
+
+export const enum CycleType {
+  Minute = 'Minute',
+  Hour = 'Hour',
+  Day = 'Day',
+  Week = 'Week',
+  Month = 'Month',
+}

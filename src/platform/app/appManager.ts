@@ -8,8 +8,16 @@ import { IAppProjectService } from '@src/platform/project/appProjectService';
 import { IAppMeta, initialMetaInfo } from '@src/platform/app/app';
 import { AppModel } from '@src/platform/app/appModel';
 import { IInstantiationService } from '@base/instantiation/instantiation';
+import { getPlatform } from '@src/platform/common/utils';
+import path from 'node:path';
+import { AppInfo } from '/#/api';
+
+const INITIAL_VERSION = 1;
+
+type AppMap = Map<string, AppModel>;
 export class AppManager {
-  private appMap: Map<string, AppModel> = new Map();
+  editableAppMap: AppMap = new Map();
+  enabledAppMap: AppMap = new Map();
   constructor(
     @ILogService private readonly logService: ILogService,
     @IHttpService private readonly httpService: IHttpService,
@@ -18,128 +26,300 @@ export class AppManager {
     @IAppProjectService private readonly projectService: IAppProjectService,
     @IInstantiationService private readonly instantiationService: IInstantiationService,
   ) {
-    this.loadApp();
+    this.initEditableApp();
+    this.initEnableApp();
   }
-  private async loadApp() {
+  private async initEditableApp() {
+    const editableApps = (await this.getEditableApps()) || [];
+    await this.initAppMap(this.editableAppMap, editableApps);
+    await this.syncEditableApps(editableApps);
+  }
+  private async initEnableApp() {
+    const enabledApps = (await this.getEnabledApps()) || [];
+    await this.initAppMap(this.enabledAppMap, enabledApps);
+  }
+
+  private async initAppMap(appMap: AppMap, remoteApps: AppInfo[]) {
+    // 启用中或编辑中的应用id及应用信息
+    const keyVersionMap = new Map<string, any>(remoteApps.map((item) => [item.appId, item]));
     const list = await this.projectService.getFolderList();
+    const filteredList: string[] = [];
+    for (const item of list) {
+      // 获取本地应用名称对应的线上版本
+      const version = keyVersionMap.get(item)?.version;
+      // 只保留本地和线上版本一致的应用
+      if (version && (await this.projectService.checkVersionExist(item, `v${version}`))) {
+        filteredList.push(item);
+      }
+    }
     const appList: [string, AppModel][] = await Promise.all(
-      list.map(async (folder) => [
-        folder,
-        await this.instantiationService.createInstance(AppModel, folder, true),
-      ]),
+      filteredList.map(async (folder) => {
+        const { version, published, enabled, editable } = keyVersionMap.get(folder)!;
+        const appState = {
+          published,
+          enabled,
+          editable,
+        };
+        return [
+          folder,
+          await this.instantiationService.createInstance(AppModel, folder, version, appState, true),
+        ];
+      }),
     );
-    this.appMap = new Map(appList);
-    await this.sync();
+    if (appMap) {
+      // 清除实例监听，防止内存泄漏
+      Array.from(appMap.values()).forEach((item) => item.dispose());
+      appMap.clear();
+    }
+    // 过滤掉初始化失败的AppModel
+    const filteredGroupList = appList.filter(([_key, value]) => !!value);
+    for (const [key, value] of filteredGroupList) {
+      appMap.set(key, value);
+    }
   }
-  async createApp(info?: Partial<IAppMeta>) {
-    this.logService.debug('create app');
+  // 新建应用
+  async newApp(info: Partial<IAppMeta>) {
     const uuid = generateUuid();
+    const localFolderName = path.join(uuid, `v${INITIAL_VERSION}`);
     const packageInfo = {
-      path: uuid,
+      path: localFolderName,
       name: `app-${uuid}`,
       auth: 'slt',
     };
     const metaInfo = { ...initialMetaInfo(uuid), ...info };
     await this.projectService.newProject(packageInfo, metaInfo);
-    this.appMap.set(uuid, await this.instantiationService.createInstance(AppModel, uuid, true));
+    const appModel = await this.instantiationService.createInstance(
+      AppModel,
+      uuid,
+      INITIAL_VERSION,
+      { published: false, enabled: false, editable: true },
+      true,
+    );
+    if (appModel) {
+      this.editableAppMap.set(uuid, appModel);
+    }
+    await this.create(uuid, info);
     return uuid;
+  }
+  // 删除内存中编辑中的应用
+  async delEditableApp(uuid: string) {
+    await this.editableAppMap.get(uuid)?.delete();
+    this.editableAppMap.delete(uuid);
   }
   async delApp(uuid: string) {
     try {
       await this.httpService.delete({
         url: `application/${uuid}`,
       });
-      await this.appMap.get(uuid)?.delete();
-      this.appMap.delete(uuid);
+      this.delEditableApp(uuid);
     } catch (e) {
-      this.logService.error('delete error:' + e);
+      this.logService.error('delete app error:' + e);
       throw new Error('Delete: ' + e);
     }
   }
-  async saveApp(uuid: string, jsonArr: CommandNode[]) {
-    const jsonStr = JSON.stringify(jsonArr);
-    const codeStr = await this.commandService.jsonToCodeStr(jsonStr);
-    const deps = this.commandService.requiredGroupDeps;
-    const res = await this.groupService.checkRequiredGroups(deps);
-    console.log(res);
-    await this.projectService.setIndexContent(uuid, codeStr);
-    await this.projectService.setAppFlow(uuid, jsonArr);
+  // 应用运行前的处理
+  async initBeforeStart(appModel: AppModel, jsonArr: CommandNode[]) {
+    const [codeStr, deps] = await this.commandService.jsonToCodeStr(jsonArr);
+    // 运行前检查依赖的分组是否都已经下载
+    await this.groupService.checkRequiredGroups(deps);
+    await appModel.setAppIndex(codeStr);
+  }
+  async saveApp(uuid: string, jsonArr: CommandNode[], info: Partial<IAppMeta>) {
+    const app = this.editableAppMap.get(uuid)!;
+    await app.setAppMeta(info);
+    await app.setAppFlow(jsonArr);
+    await this.update(uuid);
   }
   async showApp(uuid: string) {
-    const flowList = await this.projectService.getAppFlow(uuid);
+    const app = this.editableAppMap.get(uuid)!;
+    const flowList = app.getAppFlow();
     return flowList;
   }
   async getAppList() {
-    await this.sync();
-    return Array.from(this.appMap.values()).map((app) => app.item);
+    await this.syncEditableApps();
+    return Array.from(this.editableAppMap.values()).map((app) => app.item);
   }
   async getAppInfo(uuid: string) {
-    const info = this.appMap.get(uuid)!.meta;
-    return info;
-  }
-  async setAppInfo(uuid: string, info: Partial<IAppMeta>) {
-    await this.appMap.get(uuid)?.setAppMeta(info);
+    const { meta, state, version } = this.editableAppMap.get(uuid)! || {};
+    return { ...meta, ...state, version };
   }
   getWorkspace(uuid: string): string {
-    const path = this.appMap.get(uuid)!.root;
+    const path = this.editableAppMap.get(uuid)!.root;
     return path;
   }
-  async publish(uuid: string): Promise<void> {
-    const appModel = this.appMap.get(uuid)!;
-    const meta = appModel.meta;
-    const { fileStream } = await appModel.compress();
+  // 新建远端应用
+  async create(uuid: string, info: Partial<IAppMeta>) {
+    const app = this.editableAppMap.get(uuid)!;
+    const { fileStream } = await app.compress();
+    const { id: appId, diffPlatform } = app.meta;
+    const platform = getPlatform(diffPlatform);
     try {
       await this.httpService.uploadFile(
         {
-          url: 'application/publish',
+          url: 'application',
         },
         {
           data: {
-            project_id: meta.id,
+            platform: platform,
+            appId,
+            appName: info.name,
           },
           files: [{ name: 'file', file: fileStream, filename: 'app.tgz' }],
         },
       );
-    } catch (e) {
-      this.logService.error('upload error:' + e);
-      throw new Error('Publish: ' + e);
+    } catch (e: any) {
+      this.logService.error('save app error:' + e);
+      throw new Error(e.message);
     }
   }
-  private async download(app) {
+  private async updateApp(uuid: string, isPublish = false): Promise<void> {
+    const appModel = this.editableAppMap.get(uuid)!;
+    const { fileStream } = await appModel.compress();
+    const { id: appId, name, diffPlatform } = appModel.meta;
+    const platform = getPlatform(diffPlatform);
+    try {
+      const url = `application/${isPublish ? 'publish' : ''}`;
+      await this.httpService.uploadFile(
+        {
+          url,
+          method: 'PUT',
+        },
+        {
+          data: {
+            platform: platform,
+            appId,
+            appName: name,
+            version: appModel.version,
+            published: appModel.state.published.toString(),
+          },
+          files: [{ name: 'file', file: fileStream, filename: 'app.tgz' }],
+        },
+      );
+    } catch (e: any) {
+      this.logService.error('upload app error:' + e);
+      throw new Error(e.message);
+    }
+  }
+  async update(uuid: string): Promise<void> {
+    await this.updateApp(uuid);
+  }
+  async publish(uuid: string): Promise<void> {
+    await this.updateApp(uuid, true);
+    await this.syncEditableApps();
+  }
+  private async download(appMap: AppMap, app: AppInfo) {
     // 对比etag只下载etag不一致的文件
-    const projectId = app.app.project_id;
-    const remoteMd5 = app.md5;
-    const localMd5 = this.appMap.get(projectId)?.md5;
+    const { appId: uuid, published, enabled, editable, md5: remoteMd5, version } = app || {};
+    const localMd5 = appMap.get(uuid)?.md5;
+    const appState = {
+      published,
+      enabled,
+      editable,
+    };
+    const appModel = this.instantiationService.createInstance(
+      AppModel,
+      uuid,
+      version,
+      appState,
+      false,
+    );
     if (remoteMd5 !== localMd5) {
       const ossKey = app.oss_path;
       // 下载
       const res = await this.httpService.get({
-        url: 'oss/download',
+        url: 'oss',
         params: {
           key: ossKey,
         },
         responseType: 'stream',
       });
-      const appModel = this.instantiationService.createInstance(AppModel, projectId, false);
       // 解压
-      await appModel.decompress(remoteMd5, res.data);
+      await appModel.decompress(remoteMd5, res);
       const model = await appModel.init();
       if (model) {
-        this.appMap.get(projectId)?.dispose();
-        this.appMap.set(projectId, model);
+        appMap.get(uuid)?.dispose();
+        appMap.set(uuid, model);
       }
     }
   }
-  async sync() {
+  async syncEditableApps(remoteApps?: AppInfo[]) {
     try {
+      const apps = remoteApps || (await this.getEditableApps());
+      // 删除editableGroupMap中groups不包含的分组, 防止出现缓存的历史分组
+      for (const uuid of this.editableAppMap.keys()) {
+        const find = apps.find((app) => app?.appId === uuid);
+        if (!find) {
+          await this.delEditableApp(uuid);
+        }
+      }
+      return await Promise.all(
+        apps?.map(async (app) => {
+          await this.download(this.editableAppMap, app);
+        }),
+      );
+    } catch (e: any) {
+      this.logService.error('sync app error:' + e);
+      throw new Error(e.message);
+    }
+  }
+  // 获取编辑中的应用列表
+  private async getEditableApps(): Promise<AppInfo[]> {
+    try {
+      const platform = getPlatform(true);
       const res = await this.httpService.get({
         url: 'application',
+        params: {
+          editable: true,
+          platform,
+        },
       });
-      res?.data?.map((app) => {
-        this.download(app);
+      return res?.data;
+    } catch (err: any) {
+      this.logService.error('get editable app list error:' + err);
+      throw new Error(err.message);
+    }
+  }
+  // 获取编辑中的应用列表
+  private async getEnabledApps(): Promise<AppInfo[]> {
+    try {
+      const platform = getPlatform(true);
+      const res = await this.httpService.get({
+        url: 'application',
+        params: {
+          enabled: true,
+          platform,
+        },
       });
-    } catch (e) {
-      this.logService.error('async error:' + e);
+      return res?.data;
+    } catch (err: any) {
+      this.logService.error('get enabled app list error:' + err);
+      throw new Error(err.message);
+    }
+  }
+  // 获取启用中的应用
+  private async getEnabledApp(uuid: string): Promise<AppInfo> {
+    try {
+      const platform = getPlatform(true);
+      const res = await this.httpService.get({
+        url: `application/${uuid}`,
+        params: {
+          enabled: true,
+          platform,
+        },
+      });
+      return res?.data[0];
+    } catch (err: any) {
+      this.logService.error('get enabled app error:' + err);
+      throw new Error(err.message);
+    }
+  }
+  // 检查运行所需应用，并下载与本地版本不一致的应用
+  async checkRequiredEnabledApp(uuid: string): Promise<void> {
+    const app = await this.getEnabledApp(uuid);
+    if (app) {
+      await this.download(this.enabledAppMap, app);
+    } else {
+      throw new Error('app not found');
     }
   }
 }

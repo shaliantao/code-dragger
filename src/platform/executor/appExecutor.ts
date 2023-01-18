@@ -1,8 +1,5 @@
-import path from 'path';
 import { Disposable } from '@base/common/lifecycle';
 import { ILogService } from '@base/log/logService';
-import { IAppService } from '@src/platform/app/app';
-import { IEnvironmentService } from '@base/environment/environmentService';
 import { Emitter, Event } from '@base/common/event';
 import { SubProcess } from '@src/platform/executor/subProcess';
 import {
@@ -21,26 +18,22 @@ export class AppExecutor extends Disposable {
   private _runState = APP_RUN_STATE.INITIAL;
   private _hasError = false;
   private _executor: SubProcess | null = null;
-  appPath = '';
   private readonly _onAppStart = this._register(new Emitter<IAppStart>());
   readonly onAppStart: Event<IAppStart> = this._onAppStart.event;
   private readonly _onCommandStart = this._register(new Emitter<ICommandStart>());
   readonly onCommandStart: Event<ICommandStart> = this._onCommandStart.event;
   private readonly _onCommandData = this._register(new Emitter<ICommandData>());
   readonly onCommandData: Event<ICommandData> = this._onCommandData.event;
-  private readonly _onAppData = this._register(new Emitter<IAppData>());
-  readonly onAppData: Event<IAppData> = this._onAppData.event;
+  private readonly _onAppEnd = this._register(new Emitter<IAppData>());
+  readonly onAppEnd: Event<IAppData> = this._onAppEnd.event;
   private readonly _onRunStateChange = this._register(new Emitter<APP_RUN_STATE>());
   readonly onRunStateChange: Event<APP_RUN_STATE> = this._onRunStateChange.event;
   constructor(
-    private readonly appId: string,
+    private readonly appPath: string,
     private readonly command: 'node' | 'python' = 'node',
     @ILogService private readonly logService: ILogService,
-    @IAppService private readonly appService: IAppService,
-    @IEnvironmentService private readonly environmentService: IEnvironmentService,
   ) {
     super();
-    this.appPath = path.join(this.environmentService.workspacePath, this.appId);
   }
   private _getArgs(context?: IContext) {
     const args = [this.appPath];
@@ -63,67 +56,84 @@ export class AppExecutor extends Disposable {
     this._runState = state;
     this._onRunStateChange.fire(state);
   }
-  async start(context?: IContext) {
-    const args = this._getArgs(context);
-    this._executor = this._register(
-      new SubProcess(this.logService, this.command, args, {
-        stdio: 'pipe',
-      }),
-    );
-    this.runState = APP_RUN_STATE.RUNNING;
-    const meta = await this.appService.getAppInfo(this.appId);
-    this._onAppStart.fire({ startTime: Date.now(), meta });
-    this._executor.onStdoutData((data) => {
-      try {
-        const dataObj = JSON.parse(data);
-        if (dataObj.startTime) {
-          this._onCommandStart.fire(dataObj);
-        } else if (dataObj.endTime) {
-          this._onCommandData.fire({ code: COMMAND_EXEC_STATUS.SUCCESS, data: dataObj });
-        } else {
-          this.logService.info(data);
-        }
-      } catch (e) {
-        this.logService.info(data);
-      }
-    });
-
-    this._executor.onStderrData((data) => {
-      try {
-        const dataObj = JSON.parse(data);
-        if (dataObj.endTime) {
-          if (!this._hasError) {
-            this._hasError = true;
+  async start(context?: IContext): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const args = this._getArgs(context);
+      this._executor = this._register(
+        new SubProcess(this.logService, this.command, args, {
+          stdio: 'pipe',
+        }),
+      );
+      this._onAppStart.fire({ startTime: Date.now() });
+      this.runState = APP_RUN_STATE.RUNNING;
+      this._executor.onStdoutData((data) => {
+        try {
+          const dataObj = JSON.parse(data);
+          if (dataObj.startTime) {
+            const meta = dataObj.meta;
+            if (dataObj.inputs) {
+              dataObj.inputs = meta.inputs.map((item) => {
+                item.value = dataObj.inputs[item.key];
+                return item;
+              });
+            }
+            this._onCommandStart.fire(dataObj);
+          } else if (dataObj.endTime) {
+            this._onCommandData.fire({ code: COMMAND_EXEC_STATUS.SUCCESS, data: dataObj });
+          } else {
+            this._onCommandData.fire({
+              code: COMMAND_EXEC_STATUS.LOG,
+              data: { time: Date.now(), info: data },
+            });
           }
-          this._onCommandData.fire({ code: COMMAND_EXEC_STATUS.ERROR, data: dataObj });
-        } else {
+        } catch (e) {
+          this._onCommandData.fire({
+            code: COMMAND_EXEC_STATUS.LOG,
+            data: { time: Date.now(), info: data },
+          });
+        }
+      });
+
+      this._executor.onStderrData((data) => {
+        try {
+          const dataObj = JSON.parse(data);
+          if (dataObj.endTime) {
+            if (!this._hasError) {
+              this._hasError = true;
+            }
+            this._onCommandData.fire({ code: COMMAND_EXEC_STATUS.ERROR, data: dataObj });
+            reject('onStderrData: ' + dataObj.error);
+          } else {
+            this.logService.info(data);
+          }
+        } catch (e) {
           this.logService.info(data);
         }
-      } catch (e) {
-        this.logService.info(data);
-      }
-    });
+      });
 
-    this._executor.onClose(({ code, signal }) => {
-      this.logService.warn(
-        `stdio of executor closed.code: ${code},signal: ${JSON.stringify(signal)}`,
-      );
-    });
+      this._executor.onClose(({ code, signal }) => {
+        this.logService.warn(
+          `onClose: stdio of executor closed.code: ${code},signal: ${JSON.stringify(signal)}`,
+        );
+      });
 
-    this._executor.onError((error) => {
-      this.logService.error('executor has error.', error);
-      this.runState = APP_RUN_STATE.ERROR;
-    });
+      this._executor.onError((error) => {
+        this.logService.error('executor has error.', error);
+        this.runState = APP_RUN_STATE.ERROR;
+        reject('onError: ' + error);
+      });
 
-    this._executor.onExit(({ code, signal }) => {
-      this.logService.warn(
-        `stdio of executor exit.code: ${code},signal: ${JSON.stringify(signal)}`,
-      );
-      if (this.runState === APP_RUN_STATE.RUNNING) {
-        this.runState = this._hasError ? APP_RUN_STATE.ERROR : APP_RUN_STATE.SUCCESS;
-      }
-      this._onAppData.fire({ endTime: Date.now(), state: this.runState as APP_RUN_RESULT, meta });
-      this.dispose();
+      this._executor.onExit(({ code, signal }) => {
+        this.logService.warn(
+          `onExit: stdio of executor exit.code: ${code},signal: ${JSON.stringify(signal)}`,
+        );
+        if (this.runState === APP_RUN_STATE.RUNNING) {
+          this.runState = this._hasError ? APP_RUN_STATE.ERROR : APP_RUN_STATE.SUCCESS;
+        }
+        this._onAppEnd.fire({ endTime: Date.now(), state: this.runState as APP_RUN_RESULT });
+        resolve();
+        this.dispose();
+      });
     });
   }
   pause() {

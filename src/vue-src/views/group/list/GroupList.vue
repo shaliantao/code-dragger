@@ -5,6 +5,13 @@
     </div>
     <BasicTable @register="registerTable">
       <template #bodyCell="{ column, record }">
+        <template v-if="column.dataIndex === 'version'">
+          <Badge :count="`v${record.version}`" :number-style="{ backgroundColor: '#108ee9' }" />
+        </template>
+        <template v-if="column.dataIndex === 'published'">
+          <Tag v-if="record.published" color="#87d068">已发布</Tag>
+          <Tag v-else color="#A5A6A7">未发布</Tag>
+        </template>
         <template v-if="column.dataIndex === 'action'">
           <TableAction
             :actions="[
@@ -38,6 +45,7 @@
   import InfoEditor from './components/InfoEditor.vue';
   import { getColumns } from './data';
   import { ref } from 'vue';
+  import { Badge, Tag } from 'ant-design-vue';
 
   const go = useGo();
   const publishDisabled = ref(false);
@@ -81,10 +89,10 @@
   }
 
   const [registerTable, { reload }] = useTable({
-    pagination: false,
     api: getGroupList,
     columns: getColumns(),
     rowKey: 'id',
+    showIndexColumn: false,
     actionColumn: {
       width: 160,
       title: '操作',

@@ -22,6 +22,9 @@ import { IGroupService } from '@src/platform/group/group';
 import { GroupService } from '@src/platform/group/groupService';
 import { IHttpService } from '@base/http/http';
 import { HttpService } from '@base/http/httpService';
+import { ITaskQueueService, ITaskScheduleService } from '@src/platform/task/task';
+import { TaskScheduleService } from '@src/platform/task/taskScheduleService';
+import { TaskQueueService } from '@src/platform/task/taskQueueService';
 import { IAuthService, AuthService } from '@base/auth/authService';
 import { ServiceCollection } from '@base/instantiation/serviceCollection';
 import { SyncDescriptor } from '@base/instantiation/descriptors';
@@ -142,6 +145,12 @@ export class CodeApplication {
     this._initChannel<IExecutorService>(accessor, electronIpcServer, 'executor', IExecutorService);
     this._initChannel<IHttpService>(accessor, electronIpcServer, 'http', IHttpService);
     this._initChannel<IAuthService>(accessor, electronIpcServer, 'auth', IAuthService);
+    this._initChannel<ITaskScheduleService>(
+      accessor,
+      electronIpcServer,
+      'taskSchedule',
+      ITaskScheduleService,
+    );
     this.codeWin = this.instantiationService.createInstance(CodeWindow);
     this.codeWin?.createWindow();
   }
@@ -163,6 +172,8 @@ export class CodeApplication {
       ]),
     );
     services.set(IAuthService, new SyncDescriptor(AuthService));
+    services.set(ITaskScheduleService, new SyncDescriptor(TaskScheduleService));
+    services.set(ITaskQueueService, new SyncDescriptor(TaskQueueService));
 
     return this.instantiationService.createChild(services);
   }

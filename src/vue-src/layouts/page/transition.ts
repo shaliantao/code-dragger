@@ -11,7 +11,6 @@ export function getTransitionName({
   openCache,
   cacheTabs,
   enableTransition,
-  def,
 }: Pick<DefaultContext, 'route'> & {
   enableTransition: boolean;
   openCache: boolean;
@@ -29,5 +28,5 @@ export function getTransitionName({
   if (openCache) {
     name = isInCache && route.meta.loaded ? transitionName : undefined;
   }
-  return name || (route.meta.transitionName as string) || def;
+  return name || (route.meta.transitionName as string) || '';
 }

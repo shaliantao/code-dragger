@@ -65,7 +65,7 @@ export class CodeService extends Disposable implements ICodeService {
     module.exports = {
       run: async function(inputs, info) {
         try {
-          console.log(JSON.stringify({ startTime: Date.now(), info, meta }));
+          console.log(JSON.stringify({ startTime: Date.now(), inputs, info, meta }));
           const code = require('./code.js');
           const res = await code(inputs);
           console.log(JSON.stringify({ endTime: Date.now(), result: res, info, meta }));
@@ -155,7 +155,7 @@ export class CodeService extends Disposable implements ICodeService {
     // 获取导出函数输入参数对象，有则将参数解析到inputs属性上
     if (!(params.length === 1 && isObjectPattern(params[0]))) {
       throw new CodeError(
-        'The exports function supports only one object parameter',
+        'The exports function only supports single object parameter',
         CodeErrorType.SingleObjectParam,
       );
     }

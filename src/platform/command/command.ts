@@ -1,4 +1,5 @@
 import { createDecorator } from '@base/instantiation/instantiation';
+import { CommandNode } from '@src/platform/common/types';
 import t from '@babel/types';
 /**
  * 将json数据结构的指令转换成可执行的代码
@@ -7,8 +8,7 @@ export const ICommandService = createDecorator<ICommandService>('commandService'
 
 export interface ICommandService {
   readonly _serviceBrand: undefined;
-  jsonToCodeStr(jsonStr: string): string;
-  requiredGroupDeps: IRequiredGroupDep[];
+  jsonToCodeStr(jsonArr: CommandNode[]): [string, IRequiredGroupDep[]];
 }
 
 export type RunTemplateObj = {

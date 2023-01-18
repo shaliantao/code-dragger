@@ -1,23 +1,25 @@
-import { Ref, ref, unref, watch, watchEffect, toRaw } from 'vue';
+import { Ref, ref, unref, watch, toRaw, watchEffect } from 'vue';
 import { cloneDeep } from 'lodash-es';
 import type { InputsOutput } from '@src/platform/code/code';
 import type { InputArg, OutputArg } from '@src/platform/common/types';
 import { ValueType } from '@src/platform/common/enum';
-import componentSender from '/@/ipc/component';
 
 export type IWrapWithRef<T> = {
   [P in keyof T]: Ref<Nullable<T[P]>>;
 };
 
 export function useInputOutput(
-  group: Ref,
-  func: Ref,
+  initialIoParams: Nullable<InputsOutput>,
   ioParams: Ref<Nullable<InputsOutput>>,
   getOutput: () => Nullable<OutputArg>,
 ): IWrapWithRef<InputsOutput> {
   const inputs = ref<Nullable<InputArg[]>>(null);
   const output = ref<Nullable<OutputArg>>(null);
 
+  watchEffect(() => {
+    inputs.value = initialIoParams?.inputs || null;
+    output.value = initialIoParams?.output || null;
+  });
   /**
    * 监听根据code解析出的ioParams，并与历史ioParams合并后赋值给输入输出
    */
@@ -78,14 +80,6 @@ export function useInputOutput(
       }
       output.value = newOutput;
     }
-  });
-  /**
-   * 监听id变化，获取组件信息中记录的输入输出返回值
-   */
-  watchEffect(async () => {
-    const ioParams = await componentSender.getIOParams(unref(group), unref(func));
-    inputs.value = ioParams.inputs || null;
-    output.value = ioParams.output || null;
   });
 
   return { inputs, output };

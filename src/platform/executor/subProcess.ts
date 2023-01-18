@@ -32,6 +32,7 @@ export class SubProcess extends Disposable {
     try {
       this.logService.info('create child process');
       this.#child = fork(args?.[0], options);
+      this.logService.info('create child process success');
       this.initEvent(this.#child);
     } catch (e) {
       this.logService.error('create child process failed: ' + e);

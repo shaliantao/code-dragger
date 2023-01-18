@@ -71,7 +71,19 @@
           const child = listOutput.child;
           if (child) {
             data.value.output = child;
+          } else {
+            data.value.output = {
+              name: '输出',
+              key: 'output',
+              type: ValueType.Unknown,
+            };
           }
+        } else {
+          data.value.output = {
+            name: '输出',
+            key: 'output',
+            type: ValueType.Unknown,
+          };
         }
       }
     },

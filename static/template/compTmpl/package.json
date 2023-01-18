@@ -1,7 +1,6 @@
 {
   "name": "<%= name %>",
-  "version": "1",
-  "description": "",
+  "description": "component project",
   "main": "index.js",
   "author": "<%= auth %>",
   "license": "ISC"

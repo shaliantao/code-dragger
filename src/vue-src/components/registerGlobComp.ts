@@ -8,8 +8,9 @@ import {
   Layout,
   Row,
   Col,
+  Form,
 } from 'ant-design-vue';
 
 export function registerGlobComp(app: App) {
-  app.use(Input).use(Select).use(Button).use(Layout).use(PageWrapper).use(Row).use(Col);
+  app.use(Input).use(Select).use(Button).use(Layout).use(PageWrapper).use(Row).use(Col).use(Form);
 }

@@ -24,8 +24,8 @@ export class GroupService extends Disposable implements IGroupService {
   private groupManager: GroupManager;
   private readonly _onTypesChange = this._register(new Emitter<void>());
   readonly onTypesChange: Event<void> = this._onTypesChange.event;
-  get localGroupMap() {
-    return this.groupManager.localGroupMap;
+  get editableGroupMap() {
+    return this.groupManager.editableGroupMap;
   }
   get enabledGroupMap() {
     return this.groupManager.enabledGroupMap;

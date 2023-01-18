@@ -10,13 +10,13 @@ import { GroupModel } from '@src/platform/group/groupModel';
 import { IRequiredGroupDep } from '@src/platform/command/command';
 import { IInstantiationService } from '@base/instantiation/instantiation';
 
-const VITE_GLOB_APP_SHORT_NAME = process.env['VITE_GLOB_APP_SHORT_NAME'];
+const VITE_GLOB_NPM_SHORT_NAME = import.meta.env.VITE_GLOB_NPM_SHORT_NAME;
 const INITIAL_VERSION = 1;
 
 type GroupMap = Map<string, GroupModel>;
 
 export class GroupManager {
-  localGroupMap: GroupMap = new Map();
+  editableGroupMap: GroupMap = new Map();
   enabledGroupMap: GroupMap = new Map();
   constructor(
     @ILogService private readonly logService: ILogService,
@@ -24,30 +24,34 @@ export class GroupManager {
     @IHttpService private readonly httpService: IHttpService,
     @IInstantiationService private readonly instantiationService: IInstantiationService,
   ) {
-    this.loadLocalGroups();
-    this.loadEnabledGroups();
+    this.initEditableGroups();
+    this.initEnabledGroups();
   }
-  private async loadLocalGroups() {
+  // 获取本地可编辑分组,初始化editableGroupMap并与远端启用分组比较同步
+  private async initEditableGroups() {
     const editableGroups = (await this.getEditableGroups()) || [];
-    await this.loadGroups(this.localGroupMap, editableGroups);
-    await this.syncLocalGroups();
+    await this.initGroupMap(this.editableGroupMap, editableGroups);
+    await this.syncEditableGroups(editableGroups);
   }
-  // 获取本地的启用分组，与远端启用分组比较并同步
-  private async loadEnabledGroups() {
-    const enableGroups = (await this.getEnabledGroups()) || [];
-    await this.loadGroups(this.enabledGroupMap, enableGroups);
-    await this.syncEnabledGroups();
+  // 获取本地的启用分组,初始化enabledGroupMap并与远端启用分组比较同步
+  private async initEnabledGroups() {
+    const enabledGroups = (await this.getEnabledGroups()) || [];
+    await this.initGroupMap(this.enabledGroupMap, enabledGroups);
+    await this.syncEnabledGroups(enabledGroups);
   }
-  private async loadGroups(groupMap: GroupMap, remoteGroups) {
-    // 启用中的分组key及version
+  // 获取本地文件系统的可用分组，初始化groupMap
+  private async initGroupMap(groupMap: GroupMap, remoteGroups) {
+    // 启用中或编辑中的分组key及分组信息
     const keyVersionMap = new Map<string, any>(
       remoteGroups.map((item) => [item.group.project_key, item]),
     );
+    // 获取文件系统中的分组名称列表
     const list = await this.projectService.getFolderList();
     const filteredList: string[] = [];
     for (const item of list) {
+      // 获取本地分组名称对应的线上版本
       const version = keyVersionMap.get(item)?.version;
-      // 只保留启用中的分组文件夹
+      // 只保留本地和线上版本一致的分组
       if (version && (await this.projectService.checkVersionExist(item, `v${version}`))) {
         filteredList.push(item);
       }
@@ -77,11 +81,13 @@ export class GroupManager {
       Array.from(groupMap.values()).forEach((item) => item.dispose());
       groupMap.clear();
     }
+    // 过滤掉初始化失败的GroupModel
     const filteredGroupList = groupList.filter(([_key, value]) => !!value);
     for (const [key, value] of filteredGroupList) {
       groupMap.set(key, value);
     }
   }
+  // 新建分组
   async newGroup(info: Partial<IGroupMeta>) {
     const uuid = generateUuid();
     if (!info.key) {
@@ -93,7 +99,7 @@ export class GroupManager {
       // $在package name中不合法，替换处理
       groupLowerKey = groupLowerKey.replace('$', 'admin-');
     }
-    const pkgName = `${VITE_GLOB_APP_SHORT_NAME}-${groupLowerKey}`;
+    const pkgName = `${VITE_GLOB_NPM_SHORT_NAME}-${groupLowerKey}`;
 
     const localFolderName = path.join(groupKey, `v${INITIAL_VERSION}`);
     const packageInfo = {
@@ -111,13 +117,14 @@ export class GroupManager {
       true,
     );
     if (groupModel) {
-      this.localGroupMap.set(groupKey, groupModel);
+      this.editableGroupMap.set(groupKey, groupModel);
     }
     await this.create(groupKey);
     return uuid;
   }
+  // 获取分组版本列表
   async getVersions(key: string) {
-    const { id } = this.localGroupMap.get(key)?.meta || {};
+    const { id } = this.editableGroupMap.get(key)?.meta || {};
     try {
       const platform = getPlatform(true);
       const res = await this.httpService.get({
@@ -132,58 +139,55 @@ export class GroupManager {
       throw new Error(e.message);
     }
   }
-  async delLocalGroup(key: string) {
-    await this.localGroupMap.get(key)?.delete();
-    this.localGroupMap.delete(key);
+  private async delEditableGroup(key: string) {
+    await this.editableGroupMap.get(key)?.delete();
+    this.editableGroupMap.delete(key);
   }
-  async delEnabledGroup(key: string) {
+  private async delEnabledGroup(key: string) {
     await this.enabledGroupMap.get(key)?.delete();
     this.enabledGroupMap.delete(key);
   }
   async delGroup(key: string) {
-    const { id } = this.localGroupMap.get(key)!.meta;
+    const { id } = this.editableGroupMap.get(key)!.meta;
     await this.httpService.delete({
       url: `group/${id}`,
     });
-    await this.delLocalGroup(key);
+    await this.delEditableGroup(key);
     await this.delEnabledGroup(key);
   }
   async getGroupList() {
-    await this.syncLocalGroups();
-    const list = Array.from(this.localGroupMap.values()).map((group) => group.item);
+    await this.syncEditableGroups();
+    const list = Array.from(this.editableGroupMap.values()).map((group) => group.item);
     return list;
   }
   async getComponentList(key: string) {
-    const group = this.localGroupMap.get(key)!;
+    const group = this.editableGroupMap.get(key)!;
     const list = Array.from(group.componentMap.values()).map((group) => group.item);
     return list;
   }
   async getGroupInfo(key: string) {
-    const { meta, state, version } = this.localGroupMap.get(key)! || {};
+    const { meta, state, version } = this.editableGroupMap.get(key)! || {};
     return { ...meta, ...state, version };
   }
   async setGroupInfo(key: string, info: Partial<IGroupMeta>) {
-    await this.localGroupMap.get(key)?.setGroupMeta(info);
+    await this.editableGroupMap.get(key)?.setGroupMeta(info);
     await this.update(key);
   }
   async getWorkspace(key: string): Promise<string> {
-    const path = this.localGroupMap.get(key)!.root;
+    const path = this.editableGroupMap.get(key)!.root;
     return path;
   }
   async setGroupTypes(key: string, typeItem: string): Promise<void> {
-    if (typeItem === '') {
-      throw new Error('need a string type, but got empty type');
-    }
-    await this.projectService.setGroupTypes(key, typeItem);
+    await this.editableGroupMap.get(key)?.setTypes(typeItem);
   }
   async getTypes(): Promise<string[]> {
-    const list = Array.from(this.localGroupMap.values()).map((group) => {
+    const list = Array.from(this.editableGroupMap.values()).map((group) => {
       return group.types;
     });
     return list.reduce((prev, curr) => prev.concat(curr), []);
   }
   async getPackageInfo(key: string): Promise<IPackageInfo> {
-    const info = this.localGroupMap.get(key)!.pkgInfo;
+    const info = this.editableGroupMap.get(key)!.pkgInfo;
     return info;
   }
   private async createGroup(group: GroupModel) {
@@ -209,66 +213,21 @@ export class GroupManager {
       throw new Error(e.message);
     }
   }
-  private async createComponents(group: GroupModel) {
-    const { id: groupId, key: groupKey } = group.meta;
-    const components = Array.from(group.componentMap.values());
-    if (components?.length > 0) {
-      const componentsInfo = components.map((item) => {
-        const { id, func, diffPlatform } = item.meta;
-        const platform = getPlatform(diffPlatform);
-        return { id, func, platform };
-      });
-      const componentFiles = await Promise.all(
-        components.map(async (item) => {
-          const { fileStream } = await item.compress();
-          return {
-            name: item.folderName,
-            file: fileStream,
-            filename: 'component.tgz',
-          };
-        }),
-      );
-      await this.httpService.uploadFile(
-        {
-          url: 'component',
-        },
-        {
-          data: {
-            group_key: groupKey,
-            group_id: groupId,
-            group_version: group.version,
-            components: JSON.stringify(componentsInfo),
-          },
-          files: componentFiles,
-        },
-      );
-    }
-  }
-  async create(key: string) {
-    const group = this.localGroupMap.get(key)!;
+  // 新建远端分组
+  private async create(key: string) {
+    const group = this.editableGroupMap.get(key)!;
     await this.createGroup(group);
-    await this.createComponents(group);
-  }
-  async update(key: string) {
-    const group = this.localGroupMap.get(key)!;
-    const newestVersion = await this.updateGroup(group);
-    await this.updateComponents(group, newestVersion);
-    if (newestVersion) {
-      // 生成新版本后更新localGroupMap和enabledGroupMap
-      await Promise.all([this.loadEnabledGroups(), this.loadLocalGroups()]);
-    }
   }
   private async updateGroup(group: GroupModel, isPublish = false) {
     const { fileStream } = await group.compress();
     const { id: groupId, key: groupKey, diffPlatform } = group.meta;
     const platform = getPlatform(diffPlatform);
     try {
-      const params = isPublish ? { isPublish } : {};
+      const url = `group/${isPublish ? 'publish' : ''}`;
       const res = await this.httpService.uploadFile(
         {
-          url: 'group',
+          url,
           method: 'PUT',
-          params,
         },
         {
           data: {
@@ -326,13 +285,25 @@ export class GroupManager {
       }
     }
   }
+  // 更新分组
+  async update(key: string) {
+    const group = this.editableGroupMap.get(key)!;
+    const newestVersion = await this.updateGroup(group);
+    await this.updateComponents(group, newestVersion);
+    if (newestVersion) {
+      // 生成新版本后更新editableGroupMap和enabledGroupMap
+      await Promise.all([this.syncEditableGroups(), this.syncEnabledGroups()]);
+    }
+  }
+  // 发布分组
   async publish(key: string): Promise<void> {
-    const group = this.localGroupMap.get(key)!;
+    const group = this.editableGroupMap.get(key)!;
     await this.updateGroup(group, true);
     await this.updateComponents(group);
-    // 发布后更新localGroupMap和enabledGroupMap
-    await Promise.all([this.loadEnabledGroups(), this.loadLocalGroups()]);
+    // 发布后更新editableGroupMap和enabledGroupMap
+    await Promise.all([this.syncEditableGroups(), this.syncEnabledGroups()]);
   }
+  // 根据etag循环判断是否从远端下载组件
   private async downloadComponent(groupModel: GroupModel | undefined, components) {
     // 对比etag只下载etag不一致的文件
     return await Promise.all(
@@ -364,11 +335,11 @@ export class GroupManager {
       }),
     );
   }
+  // 根据etag判断是否从远端下载分组
   private async downloadGroup(groupMap: GroupMap | null, group) {
     // groupMap为null时只下载文件不初始化model
     const projectKey = group.group.project_key;
-    const { published, enabled, editable, md5, version } = group || {};
-    const remoteMd5 = md5;
+    const { published, enabled, editable, md5: remoteMd5, version } = group || {};
     const localMd5 = groupMap?.get(projectKey)?.md5;
     const groupState = {
       published,
@@ -407,7 +378,8 @@ export class GroupManager {
       await this.downloadComponent(model, components);
     }
   }
-  async getEnabledGroups() {
+  // 获取启用中的分组
+  private async getEnabledGroups() {
     try {
       const platform = getPlatform(true);
       const res = await this.httpService.get({
@@ -423,7 +395,25 @@ export class GroupManager {
       throw new Error(e.message);
     }
   }
-  async getGroupByVersion(groupKey, version) {
+  // 获取编辑中的分组
+  private async getEditableGroups() {
+    try {
+      const platform = getPlatform(true);
+      const res = await this.httpService.get({
+        url: 'group',
+        params: {
+          editable: true,
+          platform,
+        },
+      });
+      return res?.data;
+    } catch (err: any) {
+      this.logService.error('get editable error:' + err);
+      throw new Error(err.message);
+    }
+  }
+  // 获取指定版本的分组
+  private async getGroupByVersion(groupKey, version) {
     try {
       const platform = getPlatform(true);
       const res = await this.httpService.get({
@@ -442,9 +432,19 @@ export class GroupManager {
       throw new Error(e.message);
     }
   }
-  async syncEnabledGroups() {
+  // 同步enabledGroupMap，使其与远端分组保持一致，并根据etag判断是否更新本地文件
+  async syncEnabledGroups(remoteGroups?) {
     try {
-      const groups = await this.getEnabledGroups();
+      // 获取远端分组
+      const groups = remoteGroups || (await this.getEnabledGroups());
+      // 删除enabledGroupMap中groups不包含的分组, 防止出现缓存的历史分组
+      for (const key of this.enabledGroupMap.keys()) {
+        const find = groups.find((group) => group?.group?.project_key === key);
+        if (!find) {
+          await this.delEnabledGroup(key);
+        }
+      }
+      // 循环groups，同步enabledGroupMap，并根据etag判断是否更新本地文件
       return await Promise.all(
         groups?.map(async (group) => {
           await this.downloadGroup(this.enabledGroupMap, group);
@@ -455,29 +455,23 @@ export class GroupManager {
       throw new Error(e.message);
     }
   }
-  async getEditableGroups() {
+  // 同步editableGroupMap，使其与远端分组保持一致，并根据etag判断是否更新本地文件
+  async syncEditableGroups(remoteGroups?) {
     try {
-      const platform = getPlatform(true);
-      const res = await this.httpService.get({
-        url: 'group',
-        params: {
-          editable: true,
-          platform,
-        },
-      });
-      return res?.data;
-    } catch (err: any) {
-      this.logService.error('get editable error:' + err);
-      throw new Error(err.message);
-    }
-  }
-  async syncLocalGroups() {
-    try {
-      const groups = await this.getEditableGroups();
+      // 获取远端分组
+      const groups = remoteGroups || (await this.getEditableGroups());
+      // 删除editableGroupMap中groups不包含的分组, 防止出现缓存的历史分组
+      for (const key of this.editableGroupMap.keys()) {
+        const find = groups.find((group) => group?.group?.project_key === key);
+        if (!find) {
+          await this.delEditableGroup(key);
+        }
+      }
+      // 循环groups，同步editableGroupMap，并根据etag判断是否更新本地文件
       if (Array.isArray(groups)) {
         return await Promise.all(
           groups?.map(async (group) => {
-            await this.downloadGroup(this.localGroupMap, group);
+            await this.downloadGroup(this.editableGroupMap, group);
           }),
         );
       }
@@ -486,9 +480,11 @@ export class GroupManager {
       throw new Error(e.message);
     }
   }
+  // 检查运行所需分组，并下载本地不存在的分组版本
   async checkRequiredGroups(deps: IRequiredGroupDep[]) {
     return await Promise.all(
       deps.map(async ({ groupKey, version }) => {
+        // TODO 可能会造成组件缓存无法更新的情况，可同时通过md5判断
         const isExist = await this.projectService.checkVersionExist(groupKey, `v${version}`);
         if (isExist) {
           return true;

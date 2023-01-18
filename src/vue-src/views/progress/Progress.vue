@@ -40,11 +40,11 @@
   import executorSender from '/@/ipc/executor';
   import { appStateMap, iconStateMap } from '/@/views/progress/mapping';
   import { useBtnShowState } from '/@/views/app/editor/hooks/useBtnShowState';
-  import { APP_RUN_STATE, ICommandStart, IAppStart } from '@src/platform/executor/executor';
+  import { APP_RUN_STATE, ICommandStart, IAppStartWithMeta } from '@src/platform/executor/executor';
 
   const runState = ref<APP_RUN_STATE>(APP_RUN_STATE.INITIAL);
   const commandStart = ref<Nullable<ICommandStart>>(null);
-  const appStart = ref<Nullable<IAppStart>>(null);
+  const appStart = ref<Nullable<IAppStartWithMeta>>(null);
   const activeComponent = computed(() => {
     return iconStateMap.get(runState.value);
   });

@@ -14,6 +14,7 @@ export const IAppProjectService = createDecorator<IAppProjectService>('appProjec
 export interface IAppProjectService extends IProjectService<IAppMeta> {
   setAppFlow(folderName: string, jsonArr: CommandNode[]): Promise<void>;
   getAppFlow(folderName: string): Promise<CommandNode[]>;
+  checkVersionExist(folderName: string, version: string): Promise<boolean>;
 }
 
 export class AppProjectService
@@ -44,9 +45,14 @@ export class AppProjectService
     const flowList = (await this.fileService.readJson(flowPath)) as CommandNode[];
     return flowList;
   }
-  async compress(folderName: string): Promise<CompressResult> {
-    const stream = compress(folderName, {
-      cwd: this.projectRootPath,
+  async checkVersionExist(folderName: string, version: string): Promise<boolean> {
+    const targetPath = path.join(path.join(this.projectRootPath, folderName, version));
+    const exist = await this.fileService.exists(targetPath);
+    return exist;
+  }
+  async compress(folderName: string, subFolderName: string): Promise<CompressResult> {
+    const stream = compress(subFolderName, {
+      cwd: path.join(this.projectRootPath, folderName),
       excludes: ['/index.js', 'degit.md5', '.gitignore', '.DS_Store'],
     });
     return { fileStream: stream };

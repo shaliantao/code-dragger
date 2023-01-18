@@ -1,4 +1,4 @@
-import path from 'path';
+import path from 'node:path';
 import { IGroupMeta } from '@src/platform/group/group';
 import { IComponentMeta } from '@src/platform/component/component';
 import { ComponentModel } from '@src/platform/component/componentModel';
@@ -85,13 +85,6 @@ export class GroupModel extends Disposable {
     );
     return this.instantiationService.createChild(services);
   }
-  private async loadComponents() {
-    const list = await this.projectService.getFolderList(path.join(this.vFolderName, COMP_FOLDER));
-    const componentList: [string, ComponentModel][] = await Promise.all(
-      list.map(async (compFolder) => [compFolder, await this.newComponentModel(compFolder, true)]),
-    );
-    this.componentMap = new Map(componentList);
-  }
   private initWatcher(): void {
     this.watcher = chokidar.watch(this.root, {
       ignored: ['node_modules', COMP_FOLDER],
@@ -135,6 +128,13 @@ export class GroupModel extends Disposable {
   private async getTypes() {
     this.types = await this.projectService.getGroupTypes(this.vFolderName);
   }
+  async setTypes(typeItem: string) {
+    if (typeItem === '') {
+      throw new Error('need a string type, but got empty type');
+    }
+    this.types.push(typeItem);
+    await this.projectService.setGroupTypes(this.vFolderName, this.types);
+  }
   get item() {
     return Object.assign({ version: this.version }, this.meta, this.stat, this.state);
   }
@@ -148,6 +148,26 @@ export class GroupModel extends Disposable {
   async delete() {
     await this.projectService.delProject(this.folderName);
     this.dispose();
+  }
+  private async updateGroupIndex() {
+    const indexCode = this.codeService.genGroupIndex(
+      Array.from(this.componentMap.values()).map((comp) => comp.item),
+    );
+    await this.projectService.setIndexContent(this.vFolderName, indexCode);
+  }
+  async compress(): Promise<CompressResult> {
+    const { fileStream } = await this.projectService.compress(this.folderName, this.versionFolder);
+    return { fileStream };
+  }
+  async decompress(md5, remoteStream): Promise<void> {
+    await this.projectService.decompress(this.vFolderName, md5, remoteStream);
+  }
+  private async loadComponents() {
+    const list = await this.projectService.getFolderList(path.join(this.vFolderName, COMP_FOLDER));
+    const componentList: [string, ComponentModel][] = await Promise.all(
+      list.map(async (compFolder) => [compFolder, await this.newComponentModel(compFolder, true)]),
+    );
+    this.componentMap = new Map(componentList);
   }
   async newComponentModel(compName: string, initial: boolean) {
     return await this.innerInstantiationService.createInstance(ComponentModel, compName, initial);
@@ -171,19 +191,6 @@ export class GroupModel extends Disposable {
     await this.componentMap.get(compName)?.delete();
     this.componentMap.delete(compName);
     await this.updateGroupIndex();
-  }
-  private async updateGroupIndex() {
-    const indexCode = this.codeService.genGroupIndex(
-      Array.from(this.componentMap.values()).map((comp) => comp.item),
-    );
-    await this.projectService.setIndexContent(this.vFolderName, indexCode);
-  }
-  async compress(): Promise<CompressResult> {
-    const { fileStream } = await this.projectService.compress(this.folderName, this.versionFolder);
-    return { fileStream };
-  }
-  async decompress(md5, remoteStream): Promise<void> {
-    await this.projectService.decompress(this.vFolderName, md5, remoteStream);
   }
   dispose() {
     super.dispose();

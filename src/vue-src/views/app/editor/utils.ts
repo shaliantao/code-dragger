@@ -33,7 +33,10 @@ export function getOutputNodes(node: CommandNode, parent: ParentNode) {
       if (curNode.type !== CommandType.Top && item.id === curNode.id) {
         break;
       }
-      if (item.type === CommandType.Component && item?.output?.key) {
+      if (
+        (item.type === CommandType.Component || item.type === CommandType.Code) &&
+        item?.output?.key
+      ) {
         setOutput(nodeMap, item.output);
       }
     }

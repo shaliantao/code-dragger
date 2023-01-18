@@ -33,7 +33,7 @@ export type GroupItem = IGroupMeta & IFileStat;
 export interface IGroupService {
   readonly _serviceBrand: undefined;
   readonly onTypesChange: Event<void>;
-  localGroupMap: Map<string, GroupModel>;
+  editableGroupMap: Map<string, GroupModel>;
   enabledGroupMap: Map<string, GroupModel>;
   getList(): Promise<GroupItem[]>;
   getComponentList(key: string): Promise<ComponentItem[]>;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ref, toRef, onMounted, nextTick, watchEffect, computed } from 'vue';
+  import { ref, toRef, onMounted, nextTick, computed, watch } from 'vue';
   import { useElementSize } from '@vueuse/core';
   import { isMacintosh } from '@src/base/common/platform';
   import { IDirection } from './enum';
@@ -130,32 +130,40 @@
   }
 
   function resize(prevEl, nextEl, parentEl) {
-    const { width, height } = useElementSize(parentEl);
-    watchEffect(() => {
+    const { width: widthRef, height: heightRef } = useElementSize(parentEl);
+    watch([widthRef, heightRef], ([width, height], [prevWidth, prevHeight]) => {
       if (props.prevMin) {
-        let nextLen = accordingDirection(height.value, width.value) - props.prevMin - 4;
+        let nextLen = accordingDirection(height, width) - props.prevMin - 4;
         if (props.nextMin && nextLen < props.nextMin) {
           nextLen = props.prevMin;
         }
         if (direction.value === IDirection.X) {
-          nextEl.style.height = `${nextLen}px`;
-          prevEl.style.height = `${props.prevMin}px`;
+          if (prevHeight === 0) {
+            nextEl.style.height = `${nextLen}px`;
+            prevEl.style.height = `${props.prevMin}px`;
+          }
         } else {
-          nextEl.style.width = `${nextLen}px`;
-          prevEl.style.width = `${props.prevMin}px`;
+          if (width !== prevWidth) {
+            nextEl.style.width = `${nextLen}px`;
+            prevEl.style.width = `${props.prevMin}px`;
+          }
         }
       }
       if (props.nextMin) {
-        let prevLen = accordingDirection(height.value, width.value) - props.nextMin - 4;
+        let prevLen = accordingDirection(height, width) - props.nextMin - 4;
         if (props.prevMin && prevLen < props.prevMin) {
           prevLen = props.prevMin;
         }
         if (direction.value === IDirection.X) {
-          prevEl.style.height = `${prevLen}px`;
-          nextEl.style.height = `${props.nextMin}px`;
+          if (prevHeight === 0) {
+            prevEl.style.height = `${prevLen}px`;
+            nextEl.style.height = `${props.nextMin}px`;
+          }
         } else {
-          prevEl.style.width = `${prevLen}px`;
-          nextEl.style.width = `${props.nextMin}px`;
+          if (width !== prevWidth) {
+            prevEl.style.width = `${prevLen}px`;
+            nextEl.style.width = `${props.nextMin}px`;
+          }
         }
       }
     });

@@ -17,8 +17,8 @@
         <Form.Item label="是否启用" name="group">
           <span> {{ groupInfo.enabled }} </span>
         </Form.Item>
-        <Form.Item label="区分平台" name="diffPlatform">
-          <Switch v-model:checked="form.diffPlatform" />
+        <Form.Item label="是否区分平台" name="diffPlatform">
+          <span> {{ groupInfo.diffPlatform }} </span>
         </Form.Item>
         <Form.Item label="描述" name="desc">
           <a-textarea autocomplete="off" v-model:value="form.desc" />
@@ -33,7 +33,7 @@
    * TODO 计划将类型使用下拉菜单的形式展示，并支持动态增减
    */
   import { toRaw, toRefs, reactive, watch, computed, unref } from 'vue';
-  import { Form, Card, Switch } from 'ant-design-vue';
+  import { Form, Card } from 'ant-design-vue';
   import { useGroupInfo } from '../hooks/useGroupInfo';
 
   const props = defineProps({
@@ -47,25 +47,24 @@
   const form = reactive({
     name: '未命名',
     desc: '',
-    diffPlatform: false,
   });
 
   const { info, reload } = useGroupInfo(groupKey);
   watch(info, (val) => {
     if (val) {
       form.name = val.name;
-      form.diffPlatform = val.diffPlatform;
       form.desc = val.desc;
     }
   });
 
   const groupInfo = computed(() => {
-    const { key, version, enabled, published } = unref(info) || {};
+    const { key, version, enabled, published, diffPlatform } = unref(info) || {};
     return {
       key,
       version,
       enabled: enabled ? '是' : '否',
       published: published ? '是' : '否',
+      diffPlatform: diffPlatform ? '是' : '否',
     };
   });
 
