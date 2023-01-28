@@ -6,6 +6,7 @@ import { IInstantiationService } from '@base/instantiation/instantiation';
 import { SyncDescriptor } from '@base/instantiation/descriptors';
 import { InstantiationService } from '@base/instantiation/instantiationService';
 import { IEnvironmentService, EnvironmentService } from '@base/environment/environmentService';
+import { ILifecycleMainService, LifecycleMainService } from '@base/lifecycle/lifecycleMainService';
 import { NativeParsedArgs, parseArgs, OPTIONS } from '@base/environment/argv';
 import { ILogService, ConsoleLogMainService } from '@base/log/logService';
 import { ILoggerService, LoggerService } from '@base/log/loggerService';
@@ -43,6 +44,8 @@ class CodeMain {
     services.set(IEnvironmentService, environmentService);
     services.set(IFileService, new SyncDescriptor(FileService));
     services.set(IStateService, new SyncDescriptor(StateService));
+    // Lifecycle
+    services.set(ILifecycleMainService, new SyncDescriptor(LifecycleMainService));
     return new InstantiationService(services);
   }
 }

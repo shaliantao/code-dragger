@@ -6,6 +6,11 @@ import { createChannelReceiver } from '@base/ipc/common/ipc';
 import { ILogService } from '@base/log/logService';
 import { IEnvironmentService } from '@base/environment/environmentService';
 import {
+  ILifecycleMainService,
+  ShutdownReason,
+  LifecycleMainPhase,
+} from '@base/lifecycle/lifecycleMainService';
+import {
   IInstantiationService,
   ServiceIdentifier,
   ServicesAccessor,
@@ -38,6 +43,7 @@ export class CodeApplication {
     @ILogService private readonly logService: ILogService,
     @IFileService private readonly fileService: IFileService,
     @IEnvironmentService private readonly environmentService: IEnvironmentService,
+    @ILifecycleMainService private readonly lifecycleMainService: ILifecycleMainService,
   ) {
     this.codeWin = null;
     this.initFileSystem();
@@ -49,6 +55,16 @@ export class CodeApplication {
     this.logService.debug('dirname: ' + path.join(__dirname));
     this.printEnviromentLog();
     const electronIpcServer = new ElectronIPCServer();
+    this.lifecycleMainService.onWillShutdown((e) => {
+      if (e.reason === ShutdownReason.KILL) {
+        // When we go down abnormally, make sure to free up
+        // any IPC we accept from other windows to reduce
+        // the chance of doing work after we go down. Kill
+        // is special in that it does not orderly shutdown
+        // windows.
+        electronIpcServer.dispose();
+      }
+    });
     // Services
     const appInstantiationService = await this.createServices();
     appInstantiationService.invokeFunction((accessor) =>
@@ -151,6 +167,7 @@ export class CodeApplication {
       'taskSchedule',
       ITaskScheduleService,
     );
+    this.lifecycleMainService.phase = LifecycleMainPhase.Ready;
     this.codeWin = this.instantiationService.createInstance(CodeWindow);
     this.codeWin?.createWindow();
   }

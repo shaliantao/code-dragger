@@ -1,4 +1,4 @@
-import { BrowserWindow, screen, app } from 'electron';
+import { BrowserWindow, screen, app, dialog } from 'electron';
 import path from 'path';
 import { ILogService } from '@base/log/logService';
 import { IEnvironmentService } from '@base/environment/environmentService';
@@ -51,6 +51,27 @@ export class CodeWindow extends Disposable {
     this._win.on('ready-to-show', () => {
       this._win?.show();
     });
+
+    this._win.on('close', (event) => {
+      event.preventDefault();
+      this.checkQuit();
+    });
+  }
+  private async checkQuit() {
+    const options = {
+      type: 'question',
+      title: '退出确认',
+      message: '确认要退出应用程序吗？',
+      buttons: ['确认', '最小化到系统托盘', '取消'],
+    };
+    const res = await dialog.showMessageBox(options);
+    const index = res.response;
+    if (index === 0) {
+      this._win?.destroy();
+      app.exit(0);
+    } else if (index === 1) {
+      this._win?.hide();
+    }
   }
   close(): void {
     if (this._win) {
