@@ -19,12 +19,12 @@
 </template>
 <script lang="ts">
   import { defineComponent } from 'vue';
-  import { Card, CardGrid } from 'ant-design-vue';
+  import { Card } from 'ant-design-vue';
   import { Icon } from '/@/components/Icon';
   import { groupItems } from './data';
 
   export default defineComponent({
-    components: { Card, CardGrid, Icon },
+    components: { Card, Icon, CardGrid: Card.Grid },
     setup() {
       return { items: groupItems };
     },

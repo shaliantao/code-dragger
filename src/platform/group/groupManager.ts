@@ -140,11 +140,11 @@ export class GroupManager {
     }
   }
   private async delEditableGroup(key: string) {
-    await this.editableGroupMap.get(key)?.delete();
+    //await this.editableGroupMap.get(key)?.delete();
     this.editableGroupMap.delete(key);
   }
   private async delEnabledGroup(key: string) {
-    await this.enabledGroupMap.get(key)?.delete();
+    //await this.enabledGroupMap.get(key)?.delete();
     this.enabledGroupMap.delete(key);
   }
   async delGroup(key: string) {

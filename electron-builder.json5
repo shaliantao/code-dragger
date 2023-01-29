@@ -15,6 +15,7 @@
     target: ['dmg'],
   },
   win: {
+    icon: 'build/icons/512x512.ico',
     target: [
       {
         target: 'nsis',

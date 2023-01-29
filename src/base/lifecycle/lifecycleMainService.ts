@@ -30,7 +30,25 @@ export interface IWindowUnloadEvent {
   veto(value: boolean | Promise<boolean>): void;
 }
 
+export const enum ShutdownReason {
+  /**
+   * The application exits normally.
+   */
+  QUIT = 1,
+
+  /**
+   * The application exits abnormally and is being
+   * killed with an exit code (e.g. from integration
+   * test run)
+   */
+  KILL,
+}
+
 export interface ShutdownEvent {
+  /**
+   * More details why the application is shutting down.
+   */
+  reason: ShutdownReason;
   /**
    * Allows to join the shutdown. The promise can be a long running operation but it
    * will block the application from closing.
@@ -233,7 +251,7 @@ export class LifecycleMainService extends Disposable implements ILifecycleMainSe
       // the onWillShutdown() event directly because there is no veto
       // to be expected.
       if (isMacintosh && this.windowCounter === 0) {
-        this.beginOnWillShutdown();
+        this.fireOnWillShutdown(ShutdownReason.QUIT);
       }
     };
     app.addListener('before-quit', beforeQuitListener);
@@ -261,7 +279,7 @@ export class LifecycleMainService extends Disposable implements ILifecycleMainSe
       e.preventDefault();
 
       // Start shutdown sequence
-      const shutdownPromise = this.beginOnWillShutdown();
+      const shutdownPromise = this.fireOnWillShutdown(ShutdownReason.QUIT);
 
       // Wait until shutdown is signaled to be complete
       shutdownPromise.finally(() => {
@@ -278,7 +296,7 @@ export class LifecycleMainService extends Disposable implements ILifecycleMainSe
     });
   }
 
-  private beginOnWillShutdown(): Promise<void> {
+  private fireOnWillShutdown(reason: ShutdownReason): Promise<void> {
     if (this.pendingWillShutdownPromise) {
       return this.pendingWillShutdownPromise; // shutdown is already running
     }
@@ -288,6 +306,7 @@ export class LifecycleMainService extends Disposable implements ILifecycleMainSe
     const joiners: Promise<void>[] = [];
 
     this._onWillShutdown.fire({
+      reason,
       join(promise) {
         if (promise) {
           joiners.push(promise);
@@ -363,7 +382,7 @@ export class LifecycleMainService extends Disposable implements ILifecycleMainSe
       // we are on macOS where it is perfectly fine to close the last window and
       // the application continues running (unless quit was actually requested)
       if (this.windowCounter === 0 && (!isMacintosh || this._quitRequested)) {
-        this.beginOnWillShutdown();
+        this.fireOnWillShutdown(ShutdownReason.QUIT);
       }
     });
   }
