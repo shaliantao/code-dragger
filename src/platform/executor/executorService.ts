@@ -140,7 +140,7 @@ export class ExecutorService extends Disposable implements IExecutorService {
     this._app?.onAppEnd((data) => {
       this._app = null;
       this._onAppEnd.fire({ meta: appModel.item, ...data });
-      this._floatWin?.hide();
+      //this._floatWin?.hide();
       //setTimeout(() => this._floatWin?.hide(), 2000);
     });
   }
