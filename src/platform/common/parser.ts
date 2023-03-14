@@ -15,8 +15,11 @@ export function codeToAst(codeStr) {
 }
 export function templateToAst(
   templateStr: string,
-  templateParams: { [placeholder: string]: Node | Node[] },
+  templateParams?: { [placeholder: string]: Node | Node[] },
 ) {
-  const buildRequire = template(templateStr);
-  return buildRequire(templateParams);
+  if (templateParams) {
+    const buildRequire = template(templateStr);
+    return buildRequire(templateParams);
+  }
+  return template.ast(templateStr);
 }

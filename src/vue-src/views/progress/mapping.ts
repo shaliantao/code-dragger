@@ -1,5 +1,6 @@
 import {
   LoadingOutlined,
+  SyncOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   MinusCircleOutlined,
@@ -20,7 +21,7 @@ export const appStateMap = new Map([
 
 export const iconStateMap = new Map([
   [APP_RUN_STATE.INITIAL, { icon: LoadingOutlined, color: '#0099ff' }],
-  [APP_RUN_STATE.RUNNING, { icon: LoadingOutlined, color: '#0099ff' }],
+  [APP_RUN_STATE.RUNNING, { icon: SyncOutlined, color: '#0099ff', spin: true }],
   [APP_RUN_STATE.PAUSED, { icon: PauseCircleOutlined, color: '#ff9900' }],
   [APP_RUN_STATE.STOPED, { icon: MinusCircleOutlined, color: '#ff9900' }],
   [APP_RUN_STATE.TIMEOUT, { icon: ClockCircleOutlined, color: '#ff9900' }],

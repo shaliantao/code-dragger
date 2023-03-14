@@ -15,7 +15,10 @@
         @dblclick="(e) => onDblclick(e, element, parent)"
       >
         <div class="flex justify-between">
-          <span class="command-name">{{ element.name }}</span>
+          <div class="w-[calc(100%-30px)]">
+            <div class="command-name">{{ element.name }}</div>
+            <div class="command-desc">{{ getDesc(element) }}</div>
+          </div>
           <a-button
             type="link"
             class="self-center !text-gray-400"
@@ -51,6 +54,7 @@
   import { CommandNode, ParentNode } from '@src/platform/common/types';
   import { Icon } from '/@/components/Icon';
   import draggable, { ChangeEvent } from 'vuedraggable';
+  import { CommandType } from '@src/platform/common/enum';
 
   defineProps({
     currNodeId: {
@@ -73,6 +77,17 @@
     (e: 'dblclick-node', event: MouseEvent, task: CommandNode, parent: ParentNode): void;
     (e: 'del-node', event: MouseEvent, task: CommandNode, parent: ParentNode): void;
   }>();
+
+  function getDesc(element: CommandNode) {
+    if (element.type === CommandType.Component || element.type === CommandType.Code) {
+      const { inputs, output } = element;
+      const inputsStr = inputs
+        ? inputs.map((input) => `${input.name}为 ${input.value || '空'}`).join('；')
+        : '';
+      const outputStr = output ? `将${output.name}保存至 ${output.key}` : '';
+      return `${inputsStr} ${outputStr}`;
+    }
+  }
 
   function onChange(event: ChangeEvent<CommandNode>, parent: ParentNode) {
     emit('change-node', event, parent);
@@ -114,8 +129,22 @@
       text-overflow: ellipsis;
 
       .command-name {
+        display: inline-block;
+        margin-right: 5px;
+        vertical-align: middle;
+        font-weight: 400;
         line-height: 24px;
         color: #565758;
+      }
+
+      .command-desc {
+        display: inline-block;
+        vertical-align: middle;
+        width: 90%;
+        font-size: 12px;
+        line-height: 24px;
+        color: #a0a2a4;
+        overflow: hidden;
       }
 
       .desc-name {

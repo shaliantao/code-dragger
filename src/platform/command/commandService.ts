@@ -4,6 +4,7 @@ import generate from '@babel/generator';
 import { CommandType, SrcType, ValueType } from '@src/platform/common/enum';
 import {
   CommandNode,
+  CodeCommand,
   ComponentCommand,
   IfCommand,
   ElseIfCommand,
@@ -14,12 +15,19 @@ import { templateToAst } from '@src/platform/common/parser';
 import { ILogService } from '@base/log/logService';
 import { IEnvironmentService } from '@base/environment/environmentService';
 import { Disposable } from '@src/base/common/lifecycle';
-import { ICommandService, IRequiredGroupDep, RunTemplateObj } from '@src/platform/command/command';
+import {
+  ICommandService,
+  IRequiredGroupDep,
+  IReturnObj,
+  RunTemplateObj,
+} from '@src/platform/command/command';
+import { ICodeMeta } from '@src/platform/app/app';
 
 export class CommandService extends Disposable implements ICommandService {
   readonly _serviceBrand: undefined;
   private _outputVarSet = new Set<string>(); // 记录代码中用到的output变量集合
-  private _requiredGroupSet = new Set<string>();
+  private _requiredGroupSet = new Set<string>(); // 记录需要引入的分组key及版本
+  private _requiredCodeMap = new Map<string, ICodeMeta>();
   private _requiredGroupDeps: IRequiredGroupDep[] = [];
   constructor(
     @ILogService private readonly logService: ILogService,
@@ -29,6 +37,7 @@ export class CommandService extends Disposable implements ICommandService {
   }
   private get commandToAst() {
     return {
+      [CommandType.Code]: this.toCodeAst.bind(this),
       [CommandType.Component]: this.toComponentAst.bind(this),
       [CommandType.If]: this.toIfAst.bind(this),
       [CommandType.ElseIf]: this.toElseIfAst.bind(this),
@@ -43,21 +52,27 @@ export class CommandService extends Disposable implements ICommandService {
       [ValueType.Boolean]: t.booleanLiteral,
       [ValueType.Number]: t.numericLiteral,
     };
-    if ([ValueType.Object, ValueType.List].includes(type)) {
-    } else {
-      let val;
-      if (type === ValueType.Boolean) {
-        val = !!value;
-      } else if (type === ValueType.Number) {
-        val = Number.parseInt(value, 10);
+
+    try {
+      if (type === ValueType.List) {
+        const ast = templateToAst(value);
+        return ast.expression;
+      } else if (type === ValueType.Object) {
+        const ast = templateToAst(`(${value})`);
+        return ast.expression;
       } else {
-        val = value;
+        let val;
+        if (type === ValueType.Boolean) {
+          val = Boolean(value);
+        } else if (type === ValueType.Number) {
+          val = Number.parseInt(value, 10);
+        } else {
+          val = value;
+        }
+        return ((astFuncMap[type] as any) || t.stringLiteral)(val);
       }
-      try {
-        return (astFuncMap[type] || t.stringLiteral)(val);
-      } catch (e) {
-        this.logService.error('get ast value error: ' + e);
-      }
+    } catch (e) {
+      this.logService.error('get ast value error: ' + e);
     }
   }
   private getAstValue(srcType: SrcType, type: ValueType, value = '') {
@@ -68,6 +83,11 @@ export class CommandService extends Disposable implements ICommandService {
       } else if (srcType === SrcType.Output && value?.includes('.')) {
         const [parentKey, subKey] = value.split('.');
         astVal = t.memberExpression(t.identifier(parentKey), t.identifier(subKey));
+      } else if (srcType == SrcType.Global) {
+        astVal = t.memberExpression(
+          t.memberExpression(t.identifier('global'), t.identifier(value)),
+          t.identifier('value'),
+        );
       } else if (value === '') {
         astVal = t.identifier('undefined');
       } else {
@@ -78,7 +98,37 @@ export class CommandService extends Disposable implements ICommandService {
       this.logService.error('getAstValue Error: ', e);
     }
   }
-  private toComponentAst(item: ComponentCommand) {
+  private toCodeAst(item: CodeCommand): t.Statement {
+    const { code, inputs, output, id, name, errorHandling } = item;
+    this._requiredCodeMap.set(id, { code, meta: { inputs, output, id, name, errorHandling } });
+    // eslint-disable-next-line prettier/prettier
+    let templateStr = `await ${`code_${id}`}.run(%%inputs%%, ${JSON.stringify({
+      id,
+      errorHandling,
+    })});`;
+    const templateObj: RunTemplateObj = {
+      inputs: t.objectExpression(
+        inputs?.map(({ srcType, type, key, value }) => {
+          const astVal = this.getAstValue(srcType, type, value);
+          return t.objectProperty(t.identifier(key), astVal);
+        }) || [],
+      ),
+    };
+    if (output?.key) {
+      if (!this._outputVarSet.has(output?.key)) {
+        this._outputVarSet.add(output?.key);
+        templateStr = `let %%output%% = ${templateStr}`;
+      } else {
+        templateStr = `%%output%% = ${templateStr}`;
+      }
+
+      templateObj.output = t.identifier(output.key);
+    }
+
+    const ast = templateToAst(templateStr, templateObj);
+    return ast as t.Statement;
+  }
+  private toComponentAst(item: ComponentCommand): t.Statement {
     const { inputs, output, id, group, func, errorHandling, version } = item;
     this._requiredGroupSet.add(`${group}&${version}`);
     // eslint-disable-next-line prettier/prettier
@@ -106,7 +156,7 @@ export class CommandService extends Disposable implements ICommandService {
     }
 
     const ast = templateToAst(templateStr, templateObj);
-    return ast;
+    return ast as t.Statement;
   }
   private toIfAst(item: IfCommand): t.Statement {
     const { leftSrcType, leftValue, rightSrcType, rightValue, operator, tasks } = item;
@@ -194,6 +244,24 @@ export class CommandService extends Disposable implements ICommandService {
     });
     return astArr;
   }
+  private getRequiredCodeAstArr() {
+    const astArr = Array.from(this._requiredCodeMap.keys()).map((key) => {
+      const localPath = `.${path.sep}${path.join('components', key)}`;
+      return t.variableDeclaration('const', [
+        t.variableDeclarator(
+          t.identifier(`code_${key}`),
+          t.callExpression(t.identifier('require'), [t.stringLiteral(localPath)]),
+        ),
+      ]);
+    });
+    return astArr;
+  }
+  private getGlobalAst() {
+    return templateToAst('const global = require("./global.json")');
+  }
+  private getRequiredAstArr() {
+    return [...this.getRequiredGroupAstArr(), ...this.getRequiredCodeAstArr(), this.getGlobalAst()];
+  }
   private combineJudgeAst(judgeAstMap: Map<CommandType, IfStatement>): Node {
     const nodes = [...judgeAstMap.values()];
     nodes.reduce((prev, curr) => {
@@ -211,7 +279,8 @@ export class CommandService extends Disposable implements ICommandService {
     const jsonArrLength = jsonArr.length;
     jsonArr.forEach((item, index) => {
       const type = item.type;
-      const ast = this.commandToAst[type](item);
+      const toAstFunc = this.commandToAst[type] as any;
+      const ast = toAstFunc(item);
       if (CommandType.If === type) {
         // 有未拼接的分支表达式，开始拼接
         if (tempJudgeAstMap.size !== 0) {
@@ -254,7 +323,7 @@ export class CommandService extends Disposable implements ICommandService {
   `;
     try {
       const astArr = this.jsonToAstArr(jsonArr);
-      const requiredArr = this.getRequiredGroupAstArr();
+      const requiredArr = this.getRequiredAstArr();
       const program = templateToAst(templateStr, {
         content: astArr,
       });
@@ -269,15 +338,19 @@ export class CommandService extends Disposable implements ICommandService {
   private clearSet() {
     this._outputVarSet.clear();
     this._requiredGroupSet.clear();
+    this._requiredCodeMap.clear();
     this._requiredGroupDeps.length = 0;
   }
-  jsonToCodeStr(jsonArr: CommandNode[]): [string, IRequiredGroupDep[]] {
+  jsonToCode(jsonArr: CommandNode[]): IReturnObj {
     this.clearSet();
     const ast = this.jsonToProgramAst(jsonArr);
     const codeStr = generate(ast).code;
-    return [codeStr, this._requiredGroupDeps];
+    return {
+      code: codeStr,
+      requiredGroupDeps: this._requiredGroupDeps,
+      requiredCodeMap: this._requiredCodeMap,
+    };
   }
-
   dispose(): void {
     super.dispose();
     this.clearSet();

@@ -6,7 +6,7 @@ import { ILogService } from '@base/log/logService';
 import { IFileService } from '@base/file/fileService';
 import { IEnvironmentService } from '@base/environment/environmentService';
 import { IProjectService, CompressResult } from '@src/platform/project/project';
-import { IAppMeta } from '@src/platform/app/app';
+import { IAppMeta, IGlobalVarObj } from '@src/platform/app/app';
 import { createDecorator } from '@base/instantiation/instantiation';
 import { ReadStream } from 'fs';
 
@@ -15,6 +15,8 @@ export interface IAppProjectService extends IProjectService<IAppMeta> {
   setAppFlow(folderName: string, jsonArr: CommandNode[]): Promise<void>;
   getAppFlow(folderName: string): Promise<CommandNode[]>;
   checkVersionExist(folderName: string, version: string): Promise<boolean>;
+  getGlobalVar(folderName: string): Promise<IGlobalVarObj>;
+  setGlobalVar(folderName: string, globalVarObj: IGlobalVarObj): Promise<void>;
 }
 
 export class AppProjectService
@@ -46,21 +48,30 @@ export class AppProjectService
     return flowList;
   }
   async checkVersionExist(folderName: string, version: string): Promise<boolean> {
-    const targetPath = path.join(path.join(this.projectRootPath, folderName, version));
+    const targetPath = path.join(this.projectRootPath, folderName, version);
     const exist = await this.fileService.exists(targetPath);
     return exist;
   }
   async compress(folderName: string, subFolderName: string): Promise<CompressResult> {
     const stream = compress(subFolderName, {
       cwd: path.join(this.projectRootPath, folderName),
-      excludes: ['/index.js', 'degit.md5', '.gitignore', '.DS_Store'],
+      excludes: ['/index.js', 'degit.md5', '.gitignore', '.DS_Store', './components'],
     });
     return { fileStream: stream };
   }
-  async decompress(projectId: string, etag: string, remoteStream: ReadStream): Promise<void> {
-    const targetPath = path.join(path.join(this.projectRootPath, projectId));
+  async decompress(folderName: string, etag: string, remoteStream: ReadStream): Promise<void> {
+    const targetPath = path.join(path.join(this.projectRootPath, folderName));
     await this.fileService.ensureDir(targetPath);
     await this.fileService.writeFile(path.join(targetPath, 'degit.md5'), etag);
     await decompress(remoteStream, targetPath);
+  }
+  async getGlobalVar(folderName: string): Promise<IGlobalVarObj> {
+    const globalPath = path.join(this.projectRootPath, folderName, 'global.json');
+    const globalVarObj = await this.fileService.readJson(globalPath);
+    return globalVarObj as IGlobalVarObj;
+  }
+  async setGlobalVar(folderName: string, globalVarObj: IGlobalVarObj): Promise<void> {
+    const globalPath = path.join(this.projectRootPath, folderName, 'global.json');
+    await this.fileService.writeJson(globalPath, globalVarObj);
   }
 }

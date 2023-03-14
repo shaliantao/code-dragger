@@ -5,10 +5,11 @@ import { CommandNode } from '@src/platform/common/types';
 import { ICommandService } from '@src/platform/command/command';
 import { IGroupService } from '@src/platform/group/group';
 import { IAppProjectService } from '@src/platform/project/appProjectService';
-import { IAppMeta, initialMetaInfo } from '@src/platform/app/app';
+import { IAppMeta, IGlobalVar, initialMetaInfo } from '@src/platform/app/app';
 import { AppModel } from '@src/platform/app/appModel';
 import { IInstantiationService } from '@base/instantiation/instantiation';
 import { getPlatform } from '@src/platform/common/utils';
+import { CaptureWindow } from '@src/window/captureWindow';
 import path from 'node:path';
 import { AppInfo } from '/#/api';
 
@@ -18,6 +19,7 @@ type AppMap = Map<string, AppModel>;
 export class AppManager {
   editableAppMap: AppMap = new Map();
   enabledAppMap: AppMap = new Map();
+  private _captureWin: CaptureWindow | null = null;
   constructor(
     @ILogService private readonly logService: ILogService,
     @IHttpService private readonly httpService: IHttpService,
@@ -119,10 +121,13 @@ export class AppManager {
   }
   // 应用运行前的处理
   async initBeforeStart(appModel: AppModel, jsonArr: CommandNode[]) {
-    const [codeStr, deps] = await this.commandService.jsonToCodeStr(jsonArr);
+    const { code, requiredGroupDeps, requiredCodeMap } = await this.commandService.jsonToCode(
+      jsonArr,
+    );
     // 运行前检查依赖的分组是否都已经下载
-    await this.groupService.checkRequiredGroups(deps);
-    await appModel.setAppIndex(codeStr);
+    await this.groupService.checkRequiredGroups(requiredGroupDeps);
+    await appModel.setAppIndex(code);
+    await appModel.createAppComponent(requiredCodeMap);
   }
   async saveApp(uuid: string, jsonArr: CommandNode[], info: Partial<IAppMeta>) {
     const app = this.editableAppMap.get(uuid)!;
@@ -321,5 +326,35 @@ export class AppManager {
     } else {
       throw new Error('app not found');
     }
+  }
+  private showCaptureWin(url?: string) {
+    if (this._captureWin === null) {
+      this._captureWin = this.instantiationService.createInstance(CaptureWindow);
+      this._captureWin.createWindow();
+    }
+    this._captureWin?.show(url);
+  }
+  // 打开新窗口获取xpath
+  async getXpath(uuid: string, url?: string): Promise<void> {
+    this.showCaptureWin(url);
+  }
+  async addGlobalVar(uuid: string, globalVar: IGlobalVar) {
+    const model = this.editableAppMap.get(uuid);
+    await model?.addGlobalVar(globalVar);
+  }
+  async editGlobalVar(uuid: string, globalVar: IGlobalVar) {
+    const model = this.editableAppMap.get(uuid);
+    await model?.editGlobalVar(globalVar);
+  }
+  async getGlobalList(uuid: string): Promise<IGlobalVar[]> {
+    const globalVarObj = this.editableAppMap.get(uuid)!.globalVarObj;
+    return Object.values(globalVarObj);
+  }
+  async setTypes(uuid: string, typeItem: string): Promise<void> {
+    await this.editableAppMap.get(uuid)!.setTypes(typeItem);
+  }
+  async getTypes(uuid: string): Promise<string[]> {
+    const list = await this.editableAppMap.get(uuid)!.types;
+    return list;
   }
 }

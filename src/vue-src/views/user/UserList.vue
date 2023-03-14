@@ -56,7 +56,7 @@
     openModal(true);
   }
 
-  //function handleEdit({ id }) {}
+  function handleEdit() {}
 
   async function handleDel({ id }) {
     await createConfirm({

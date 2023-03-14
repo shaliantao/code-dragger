@@ -87,6 +87,23 @@ export class GroupManager {
       groupMap.set(key, value);
     }
   }
+  // 同步本地分组至线上
+  async uploadGroup() {
+    const list = await this.projectService.getFolderList();
+    await Promise.all(
+      list.map(async (file) => {
+        const groupModel = await this.instantiationService.createInstance(
+          GroupModel,
+          file,
+          INITIAL_VERSION,
+          { published: false, enabled: false, editable: true },
+          true,
+        );
+        await this.createGroup(groupModel);
+        await this.updateComponents(groupModel);
+      }),
+    );
+  }
   // 新建分组
   async newGroup(info: Partial<IGroupMeta>) {
     const uuid = generateUuid();
@@ -177,7 +194,7 @@ export class GroupManager {
     const path = this.editableGroupMap.get(key)!.root;
     return path;
   }
-  async setGroupTypes(key: string, typeItem: string): Promise<void> {
+  async setTypes(key: string, typeItem: string): Promise<void> {
     await this.editableGroupMap.get(key)?.setTypes(typeItem);
   }
   async getTypes(): Promise<string[]> {
@@ -195,7 +212,7 @@ export class GroupManager {
     const { id: groupId, key: groupKey, diffPlatform } = group.meta;
     const platform = getPlatform(diffPlatform);
     try {
-      await this.httpService.uploadFile(
+      const groupInfo = await this.httpService.uploadFile(
         {
           url: 'group',
         },
@@ -208,6 +225,7 @@ export class GroupManager {
           files: [{ name: 'file', file: fileStream, filename: 'group.tgz' }],
         },
       );
+      group.setMd5(groupInfo?.data.versions[0].md5);
     } catch (e: any) {
       this.logService.error('save error:' + e);
       throw new Error(e.message);
@@ -485,6 +503,9 @@ export class GroupManager {
     return await Promise.all(
       deps.map(async ({ groupKey, version }) => {
         // TODO 可能会造成组件缓存无法更新的情况，可同时通过md5判断
+        if (version === 'undefined') {
+          throw new Error('no group version to check');
+        }
         const isExist = await this.projectService.checkVersionExist(groupKey, `v${version}`);
         if (isExist) {
           return true;

@@ -34,36 +34,37 @@
 </script>
 
 <script setup lang="ts">
-  import { ref, unref, computed, onUnmounted } from 'vue';
-  import { useRouter } from 'vue-router';
+  import { ref, unref, computed } from 'vue';
   import { PlusOutlined } from '@ant-design/icons-vue';
-  import groupSender from '/@/ipc/group';
   import { valueTypeArr } from '/@/utils/mapping';
+  import { useTypesContext } from '../hooks/useTypeContext';
 
-  const { currentRoute } = useRouter();
-  const { group } = unref(currentRoute)?.params || {};
   const emits = defineEmits(['custom-type-change']);
-  const customArr = ref<string[]>([]);
-  const searchVal = ref('');
-  async function getTypes() {
-    customArr.value = await groupSender.getTypes();
-  }
-  const event = groupSender.onTypesChange(() => {
-    getTypes();
+  const props = defineProps({
+    isDefaultType: {
+      type: Boolean,
+      default: false,
+    },
   });
-  getTypes();
+  const searchVal = ref('');
+
   const defaultArr = valueTypeArr;
 
   const defaultTypes = defaultArr.map((item) => ({ label: item, value: item }));
 
+  const context = useTypesContext();
+
   const items = computed(() => {
-    const customTypes = customArr.value.map((item) => ({ label: item, value: item }));
+    if (props.isDefaultType) {
+      return defaultTypes;
+    }
+    const customTypes = unref(context.types).map((item) => ({ label: item, value: item }));
     const types = defaultTypes.concat(customTypes);
     return types;
   });
 
   const addItem = async () => {
-    await groupSender.setGroupTypes(group as string, searchVal.value);
+    await context.setTypes(searchVal.value);
     searchVal.value = '';
   };
   function onSearch(val) {
@@ -74,7 +75,6 @@
       emits('custom-type-change', val);
     }
   }
-  onUnmounted(() => event?.dispose());
 </script>
 
 <style scoped></style>

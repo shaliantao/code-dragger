@@ -12,7 +12,7 @@ export function useInputOutput(
   initialIoParams: ComputedRef<InputsOutput> | Ref<InputsOutput>,
   ioParams: Ref<Nullable<InputsOutput>>,
   getOutput: () => Nullable<OutputArg>,
-): IWrapWithRef<InputsOutput> {
+): IWrapWithRef<Required<InputsOutput>> {
   const inputs = ref<Nullable<InputArg[]>>(null);
   const output = ref<Nullable<OutputArg>>(null);
 

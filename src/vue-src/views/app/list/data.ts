@@ -32,7 +32,7 @@ export const schemas: FormSchema[] = [
   },
 ];
 
-export function getColumns(): BasicColumn[] {
+export function getDevColumns(): BasicColumn[] {
   return [
     {
       title: '应用名称',
@@ -49,6 +49,39 @@ export function getColumns(): BasicColumn[] {
     {
       title: '状态',
       dataIndex: 'published',
+    },
+    {
+      title: '创建时间',
+      dataIndex: 'createTime',
+      customRender: ({ text }) => {
+        return formatToDateTime(text);
+      },
+    },
+    {
+      title: '修改时间',
+      dataIndex: 'modifyTime',
+      customRender: ({ text }) => {
+        return formatToDateTime(text);
+      },
+      defaultSortOrder: 'descend',
+      sorter: (a, b) => a.modifyTime - b.modifyTime,
+    },
+  ];
+}
+
+export function getDownloadColumns(): BasicColumn[] {
+  return [
+    {
+      title: '应用名称',
+      dataIndex: 'name',
+    },
+    {
+      title: '描述',
+      dataIndex: 'desc',
+    },
+    {
+      title: '版本',
+      dataIndex: 'version',
     },
     {
       title: '创建时间',

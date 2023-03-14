@@ -53,6 +53,7 @@ export const enum Platform {
 }
 
 export const enum ExecMode {
+  Quick = 'Quick',
   Timing = 'Timing',
   Cycle = 'Cycle',
 }

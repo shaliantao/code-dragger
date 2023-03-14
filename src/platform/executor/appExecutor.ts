@@ -58,6 +58,7 @@ export class AppExecutor extends Disposable {
   }
   async start(context?: IContext): Promise<void> {
     return new Promise((resolve, reject) => {
+      this.runState = APP_RUN_STATE.START;
       const args = this._getArgs(context);
       this._executor = this._register(
         new SubProcess(this.logService, this.command, args, {
@@ -71,11 +72,14 @@ export class AppExecutor extends Disposable {
           const dataObj = JSON.parse(data);
           if (dataObj.startTime) {
             const meta = dataObj.meta;
-            if (dataObj.inputs) {
-              dataObj.inputs = meta.inputs.map((item) => {
-                item.value = dataObj.inputs[item.key];
+            // dataObj.inputs是存储用户实际输入信息的对象，meta.inputs是组件定义的输入信息数组
+            if (dataObj.inputs && Array.isArray(meta.inputs)) {
+              dataObj.inputs = meta.inputs?.map((item) => {
+                item.value = JSON.stringify(dataObj.inputs[item.key]);
                 return item;
               });
+            } else {
+              dataObj.inputs = [];
             }
             this._onCommandStart.fire(dataObj);
           } else if (dataObj.endTime) {
@@ -96,18 +100,21 @@ export class AppExecutor extends Disposable {
 
       this._executor.onStderrData((data) => {
         try {
+          if (!this._hasError) {
+            this._hasError = true;
+          }
           const dataObj = JSON.parse(data);
           if (dataObj.endTime) {
-            if (!this._hasError) {
-              this._hasError = true;
-            }
             this._onCommandData.fire({ code: COMMAND_EXEC_STATUS.ERROR, data: dataObj });
-            reject('onStderrData: ' + dataObj.error);
           } else {
             this.logService.info(data);
           }
         } catch (e) {
           this.logService.info(data);
+          this._onCommandData.fire({
+            code: COMMAND_EXEC_STATUS.ERROR_LOG,
+            data: { time: Date.now(), info: data },
+          });
         }
       });
 

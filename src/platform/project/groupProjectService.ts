@@ -12,8 +12,6 @@ import { ReadStream } from 'fs';
 export const IGroupProjectService = createDecorator<IGroupProjectService>('groupProjectService');
 
 export interface IGroupProjectService extends IProjectService<IGroupMeta> {
-  setGroupTypes(key: string, typesArr: string[]): Promise<void>;
-  getGroupTypes(folderName: string): Promise<string[]>;
   checkVersionExist(folderName: string, version: string): Promise<boolean>;
 }
 
@@ -28,15 +26,6 @@ export class GroupProjectService
     @IEnvironmentService protected readonly environmentService: IEnvironmentService,
   ) {
     super(environmentService.groupPath, environmentService.groupTmplPath, logService, fileService);
-  }
-  async setGroupTypes(folderName: string, typesArr: string[]): Promise<void> {
-    const typesPath = path.join(this.projectRootPath, folderName, 'types.json');
-    await this.fileService.writeJson(typesPath, typesArr);
-  }
-  async getGroupTypes(folderName: string): Promise<string[]> {
-    const typesPath = path.join(this.projectRootPath, folderName, 'types.json');
-    const typesArr = (await this.fileService.readJson(typesPath)) as string[];
-    return typesArr;
   }
   async checkVersionExist(folderName: string, version: string): Promise<boolean> {
     const targetPath = path.join(path.join(this.projectRootPath, folderName, version));
@@ -53,7 +42,7 @@ export class GroupProjectService
     return { fileStream: stream };
   }
   async decompress(projectKey: string, etag: string, remoteStream: ReadStream): Promise<void> {
-    const targetPath = path.join(path.join(this.projectRootPath, projectKey));
+    const targetPath = path.join(this.projectRootPath, projectKey);
     await this.fileService.ensureDir(targetPath);
     await this.fileService.writeFile(path.join(targetPath, 'degit.md5'), etag);
     await decompress(remoteStream, targetPath);

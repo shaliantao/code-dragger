@@ -6,6 +6,7 @@
         <component
           :is="activeComponent?.icon"
           class="mr-1"
+          :spin="activeComponent?.spin"
           :style="{ fontSize: '18px', color: activeComponent?.color }"
         />
         {{ runningData.title }} {{ stateData }}
@@ -51,6 +52,7 @@
 
   const runStateEvent = executorSender.onRunStateChange((state) => {
     runState.value = state;
+    console.log('state ' + state);
   });
   const commandStartEvevt = executorSender.onCommandStart((data) => {
     commandStart.value = data;

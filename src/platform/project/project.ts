@@ -19,6 +19,8 @@ export interface IProjectService<T extends object> {
     packageInfo: Omit<IPackageInfo, 'dependencies'>,
   ): Promise<void>;
   getPackageInfo(folderName: string): Promise<IPackageInfo>;
+  setTypes(key: string, typesArr: string[]): Promise<void>;
+  getTypes(folderName: string): Promise<string[]>;
   compress(folderName: string, subFolderName?: string): Promise<CompressResult>;
   decompress(key: string, etag: string, res: ReadStream): Promise<void>;
 }

@@ -30,13 +30,14 @@
         </template>
       </TreeSelect>
       <a-select v-else-if="isGlobalSrc" class="flex-1" :value="modelValue" @select="onValChange">
-        <a-select-opt-group label="字段映射">
+        <!-- <a-select-opt-group label="字段映射">
           <a-select-option value="jack">Jack</a-select-option>
           <a-select-option value="lucy">Lucy</a-select-option>
-        </a-select-opt-group>
+        </a-select-opt-group> -->
         <a-select-opt-group label="全局变量">
-          <a-select-option value="Yiminghe">yiminghe</a-select-option>
-          <a-select-option value="Yiminghe1">yiminghe1</a-select-option>
+          <a-select-option v-for="item in globalUseableVars" :key="item.name" :value="item.value">
+            {{ item.name }}
+          </a-select-option>
         </a-select-opt-group>
       </a-select>
       <Tooltip title="手动输入">
@@ -84,6 +85,7 @@
     ObjectOutputArg,
   } from '@src/platform/common/types';
   import { cloneDeep } from 'lodash';
+  import { IGlobalVar } from '@src/platform/app/app';
 
   const props = defineProps({
     isEnum: {
@@ -103,7 +105,7 @@
       default: SrcType.Input,
     },
     valueType: {
-      type: String as PropType<ValueType>,
+      type: String,
       default: ValueType.Unknown,
     },
     autoSave: {
@@ -143,6 +145,17 @@
       return [];
     }
     return getUseableNodes(outputNodes);
+  });
+
+  const globalUseableVars = computed(() => {
+    if (!isGlobalSrc.value) {
+      return [];
+    }
+    const globalVars = unref(context.globalVars);
+    if (!globalVars || globalVars.length === 0) {
+      return [];
+    }
+    return getUseableVars(globalVars);
   });
   if (!isEnumSrc.value) {
     watch(
@@ -222,6 +235,18 @@
       }
     }
     return useableNodes;
+  }
+  function getUseableVars(globalVars: IGlobalVar[]): IGlobalVar[] {
+    // 如果输入类型未知则接受全部输出类型
+    if (props.valueType === ValueType.Unknown) {
+      return globalVars;
+    }
+
+    const useableVars: IGlobalVar[] = globalVars.filter((item) =>
+      [ValueType.Unknown, props.valueType].includes(item.type),
+    );
+
+    return useableVars;
   }
 </script>
 

@@ -34,10 +34,10 @@ const studio: AppRouteModule = {
       },
     },
     {
-      path: 'appEditor/:uuid',
+      path: 'appEditor/:opType/:uuid',
       name: 'AppEditor',
       component: () => import('/@/views/app/editor/AppEditor.vue'),
-      props: (route) => ({ uuid: route.params.uuid }),
+      props: (route) => ({ uuid: route.params.uuid, opType: route.params.opType }),
       meta: {
         // affix: true,
         title: '应用编辑器',

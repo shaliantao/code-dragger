@@ -14,6 +14,7 @@ export enum KILL_TYPE {
 
 export enum APP_RUN_STATE {
   INITIAL = 'INITIAL',
+  START = 'START',
   RUNNING = 'RUNNING',
   PAUSED = 'PAUSED',
   TIMEOUT = 'TIMEOUT',
@@ -26,6 +27,7 @@ export enum COMMAND_EXEC_STATUS {
   SUCCESS = 0,
   ERROR = 1,
   LOG = 2,
+  ERROR_LOG = 3,
 }
 
 export type APP_RUN_RESULT = Exclude<
@@ -90,10 +92,21 @@ export interface ICommandDataLog {
   };
 }
 
-export type ICommandData = ICommandDataSuccess | ICommandDataError | ICommandDataLog;
+export interface ICommandErrorLog {
+  code: COMMAND_EXEC_STATUS.ERROR_LOG;
+  data: {
+    time: number;
+    info: string;
+  };
+}
+
+export type ICommandData =
+  | ICommandDataSuccess
+  | ICommandDataError
+  | ICommandDataLog
+  | ICommandErrorLog;
 
 export interface IPrint {
-  onAppStart: (data: IAppStartWithMeta) => void;
   onAppStateChange: (state: APP_RUN_STATE) => void;
   onCommandStart: (data: ICommandStart) => void;
   onCommandData: (data: ICommandData) => void;

@@ -4,6 +4,7 @@ import { ICodeService } from '@src/platform/code/code';
 import { IComponentProjectService } from '@src/platform/project/compProjectService';
 import { IStatInfo, IPackageInfo } from '@src/platform/project/project';
 import { Disposable } from '@base/common/lifecycle';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
 import { memoize } from '@base/common/decorators';
 import chokidar from 'chokidar';
 
@@ -110,6 +111,10 @@ export class ComponentModel extends Disposable {
   }
   async decompress(md5, remoteStream): Promise<void> {
     await this.projectService.decompress(this.folderName, md5, remoteStream);
+  }
+  async setMd5(md5: string) {
+    this.md5 = md5;
+    await this.projectService.setFileContent(this.folderName, 'degit.md5', md5);
   }
   dispose() {
     super.dispose();

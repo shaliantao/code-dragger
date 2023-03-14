@@ -13,7 +13,7 @@
   import { useResizeObserver } from '@vueuse/core';
   import * as monaco from 'monaco-editor';
   import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
-  import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
+  //import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
   import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 
   const props = defineProps({
@@ -28,9 +28,9 @@
   const dom = ref();
   self.MonacoEnvironment = {
     getWorker(_, label) {
-      if (label === 'json') {
-        return new jsonWorker();
-      }
+      // if (label === 'json') {
+      //   return new jsonWorker();
+      // }
       if (label === 'typescript' || label === 'javascript') {
         return new tsWorker();
       }

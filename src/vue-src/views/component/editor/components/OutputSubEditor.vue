@@ -86,7 +86,7 @@
   import { buildShortUUID } from '/@/utils/uuid';
   import { ValueType } from '@src/platform/common/enum';
   import { OutputArg, BaseOutputArg, ListItemArg } from '@src/platform/common/types';
-  import TypeSelector from './TypeSelector.vue';
+  import { TypeSelector } from '/@/components/TypeSelector';
 
   const initialObjectChild: () => BaseOutputArg = () => ({
     id: buildShortUUID(),

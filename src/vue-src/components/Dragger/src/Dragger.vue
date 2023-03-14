@@ -48,14 +48,6 @@
     };
   });
 
-  function setBorder(dragger) {
-    if (direction.value === IDirection.X) {
-      dragger.style.borderBottom = '1px solid #efecec';
-    } else {
-      dragger.style.borderLeft = '1px solid #efecec';
-    }
-  }
-
   function dragControllerDiv(prevEl, nextEl, parentEl) {
     const dragger = draggerRef.value;
     if (!dragger) {
@@ -64,7 +56,6 @@
     const initialCursor = accordingDirection(rowResize, colResize);
 
     dragger.style.cursor = initialCursor;
-    setBorder(dragger);
 
     dragger.onmouseenter = function () {
       if (isMousedown) {
@@ -78,13 +69,12 @@
         return;
       }
       dragger.style.background = 'transparent';
-      setBorder(dragger);
     };
     // 鼠标按下事件
     dragger.onmousedown = function (e) {
       isMousedown = true;
       // 颜色改变提醒
-      dragger.style.background = '#818181';
+      dragger.style.background = '#57AFFF';
       const startCoord = accordingDirection(e.clientY, e.clientX);
       const prevLen = accordingDirection(prevEl.offsetHeight, prevEl.offsetWidth);
       const totalLen =

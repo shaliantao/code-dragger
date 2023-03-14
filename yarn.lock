@@ -1223,6 +1223,11 @@
   resolved "http://registry.m.jd.com/@types/verror/download/@types/verror-1.10.5.tgz#2a1413aded46e67a1fe2386800e291123ed75eb1"
   integrity sha1-KhQTre1G5nof4jhoAOKREj7XXrE=
 
+"@types/web-bluetooth@^0.0.16":
+  version "0.0.16"
+  resolved "https://registry.yarnpkg.com/@types/web-bluetooth/-/web-bluetooth-0.0.16.tgz#1d12873a8e49567371f2a75fe3e7f7edca6662d8"
+  integrity sha512-oh8q2Zc32S6gd/j50GowEjKLoOVOwHP/bWVjKJInBwQqdOYMdPrf1oVlelTlyfFK3CKxL1uahMDAr+vy8T7yMQ==
+
 "@types/yargs-parser@*":
   version "21.0.0"
   resolved "http://registry.m.jd.com/@types/yargs-parser/download/@types/yargs-parser-21.0.0.tgz#0c60e537fa790f5f9472ed2776c2b71ec117351b"
@@ -1522,18 +1527,25 @@
   resolved "http://registry.m.jd.com/@vue/shared/download/@vue/shared-3.2.37.tgz#8e6adc3f2759af52f0e85863dfb0b711ecc5c702"
   integrity sha1-jmrcPydZr1Lw6Fhj37C3EezFxwI=
 
-"@vueuse/core@^6.3.3":
-  version "6.9.2"
-  resolved "http://registry.m.jd.com/@vueuse/core/download/@vueuse/core-6.9.2.tgz#76b16d01f33cf367dd1a2d7f2e31d106443ceb8a"
-  integrity sha1-drFtAfM882fdGi1/LjHRBkQ864o=
+"@vueuse/core@9.10.0":
+  version "9.10.0"
+  resolved "https://registry.yarnpkg.com/@vueuse/core/-/core-9.10.0.tgz#2ef6e55ca773c5b2db1e3f13b8292af96dd32214"
+  integrity sha512-CxMewME07qeuzuT/AOIQGv0EhhDoojniqU6pC3F8m5VC76L47UT18DcX88kWlP3I7d3qMJ4u/PD8iSRsy3bmNA==
   dependencies:
-    "@vueuse/shared" "6.9.2"
+    "@types/web-bluetooth" "^0.0.16"
+    "@vueuse/metadata" "9.10.0"
+    "@vueuse/shared" "9.10.0"
     vue-demi "*"
 
-"@vueuse/shared@6.9.2":
-  version "6.9.2"
-  resolved "http://registry.m.jd.com/@vueuse/shared/download/@vueuse/shared-6.9.2.tgz#97e4369fa7262ebc96fe1d6e210268f30b037005"
-  integrity sha1-l+Q2n6cmLryW/h1uIQJo8wsDcAU=
+"@vueuse/metadata@9.10.0":
+  version "9.10.0"
+  resolved "https://registry.yarnpkg.com/@vueuse/metadata/-/metadata-9.10.0.tgz#1a5eb94ca755bd8e666505f47da7d88969cffdc7"
+  integrity sha512-G5VZhgTCapzU9rv0Iq2HBrVOSGzOKb+OE668NxhXNcTjUjwYxULkEhAw70FtRLMZc+hxcFAzDZlKYA0xcwNMuw==
+
+"@vueuse/shared@9.10.0":
+  version "9.10.0"
+  resolved "https://registry.yarnpkg.com/@vueuse/shared/-/shared-9.10.0.tgz#49874a0f9955d28689b3133de660367c63dbc030"
+  integrity sha512-vakHJ2ZRklAzqmcVBL38RS7BxdBA4+5poG9NsSyqJxrt9kz0zX3P5CXMy0Hm6LFbZXUgvKdqAS3pUH1zX/5qTQ==
   dependencies:
     vue-demi "*"
 
@@ -3433,6 +3445,13 @@ electron-builder@^23.1.0:
     read-config-file "6.2.0"
     update-notifier "^5.1.0"
     yargs "^17.0.1"
+
+electron-chrome-extensions@^3.10.0:
+  version "3.10.0"
+  resolved "https://registry.yarnpkg.com/electron-chrome-extensions/-/electron-chrome-extensions-3.10.0.tgz#d71699a18d657220e4266b77bb897685e4cf3e1b"
+  integrity sha512-Q0ri/fGfpqTvePLMLL4EyKtKYm4dlcMOArZezR4wI+wEpIEBDr5S5kT4b8vrb05DzMp5ZE2If64H/n7L5lxVbw==
+  dependencies:
+    debug "^4.3.1"
 
 electron-devtools-installer@^3.2.0:
   version "3.2.0"
@@ -8689,10 +8708,15 @@ typedarray@^0.0.6:
   resolved "http://registry.m.jd.com/typedarray/download/typedarray-0.0.6.tgz#867ac74e3864187b1d3d47d996a78ec5c8830777"
   integrity sha1-hnrHTjhkGHsdPUfZlqeOxciDB3c=
 
-typescript@^4.4.3, typescript@^4.6.4, typescript@^4.7.4:
+typescript@^4.4.3, typescript@^4.6.4:
   version "4.7.4"
   resolved "http://registry.m.jd.com/typescript/download/typescript-4.7.4.tgz#1a88596d1cf47d59507a1bcdfb5b9dfe4d488235"
   integrity sha1-GohZbRz0fVlQehvN+1ud/k1IgjU=
+
+typescript@^4.9.5:
+  version "4.9.5"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.9.5.tgz#095979f9bcc0d09da324d58d03ce8f8374cbe65a"
+  integrity sha512-1FXk9E2Hm+QzZQ7z+McJiHL4NW1F2EzMu9Nq9i3zAaGqibafqYwCVU6WyWAuyQRRzOlxou8xZSyXLEN8oKj24g==
 
 uglify-js@^3.1.4:
   version "3.17.0"

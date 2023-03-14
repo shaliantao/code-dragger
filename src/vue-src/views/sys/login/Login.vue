@@ -163,6 +163,8 @@
         &__title {
           font-size: 24px;
           color: #fff;
+          height: 30px;
+          line-height: 30px;
         }
 
         img {

@@ -22,6 +22,12 @@ export function getSchemas(): FormSchema[] {
       field: 'appId',
       component: 'ApiSelect',
       label: '应用',
+      rules: [
+        {
+          required: true,
+          trigger: 'blur',
+        },
+      ],
       colProps: {
         span: 23,
       },
@@ -39,9 +45,14 @@ export function getSchemas(): FormSchema[] {
       colProps: {
         span: 23,
       },
-      defaultValue: ExecMode.Cycle,
+      defaultValue: ExecMode.Quick,
       componentProps: {
         options: [
+          {
+            label: '快速执行',
+            value: ExecMode.Quick,
+            key: ExecMode.Quick,
+          },
           {
             label: '周期执行',
             value: ExecMode.Cycle,

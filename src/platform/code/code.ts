@@ -2,6 +2,7 @@ import { createDecorator } from '@base/instantiation/instantiation';
 import { InputArg, OutputArg } from '@src/platform/common/types';
 import { ValueType } from '@src/platform/common/enum';
 import { IComponentMeta, ComponentItem } from '@src/platform/component/component';
+import { IAppComponentMeta } from '@src/platform/app/app';
 
 import type { StringLiteral, NumericLiteral, BooleanLiteral } from '@babel/types';
 
@@ -10,7 +11,7 @@ export const ICodeService = createDecorator<ICodeService>('codeService');
 export interface ICodeService {
   readonly _serviceBrand: undefined;
   genGroupIndex(list: ComponentItem[]): string;
-  getModuleExport(meta: IComponentMeta): string;
+  getModuleExport(meta: IComponentMeta | IAppComponentMeta): string;
   parseIOParmas(codeStr: string): InputsOutput;
 }
 

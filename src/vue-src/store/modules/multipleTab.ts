@@ -201,9 +201,6 @@ export const useMultipleTabStore = defineStore({
     setPageCache(pageCache) {
       this.pageCache = pageCache;
     },
-    // removeCache(cacheKey) {
-    //   this.pageCache?.remove(cacheKey);
-    // },
     // Close according to key
     async closeTabByKey(key: string, router: Router) {
       //this.removeCache(key);

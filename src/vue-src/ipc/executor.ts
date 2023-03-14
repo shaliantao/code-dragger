@@ -1,7 +1,7 @@
 import { ipcService } from '/@/ipc/ipc';
-import { createChannelSender } from '@base/ipc/common/ipc';
+import { createChannelSenderWithMsg } from '/@/ipc/ipc';
 import { IExecutorService } from '@src/platform/executor/executorService';
 
 const channel = ipcService.mainProcessService.getChannel('executor');
 
-export default createChannelSender<IExecutorService>(channel);
+export default createChannelSenderWithMsg<IExecutorService>(channel);

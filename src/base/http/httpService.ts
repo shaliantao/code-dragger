@@ -146,7 +146,7 @@ export class HttpService extends Disposable implements IHttpService {
       });
     }
 
-    return this.axiosInstance.request<T>({
+    const res = this.axiosInstance.request<T>({
       method: 'POST',
       ...config,
       data: formData,
@@ -157,6 +157,7 @@ export class HttpService extends Disposable implements IHttpService {
         ...formHeaders,
       },
     });
+    return res as unknown as Promise<T>;
   }
 
   downloadFile() {

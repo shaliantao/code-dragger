@@ -5,7 +5,7 @@
         <a-button @click="createComponent">创建组件</a-button>
       </div>
       <div class="flex gap-2">
-        <a-button @click="handleSubmit" :disabled="saveDisabled">保存</a-button>
+        <a-button @click="handleSubmit" :disabled="saveDisabled">保存并同步</a-button>
       </div>
     </div>
     <div class="flex h-[calc(100%-40px)]">
@@ -38,7 +38,9 @@
           <Tabs.TabPane key="2" tab="依赖">
             <Description @register="register" class="my-4" />
           </Tabs.TabPane>
-          <Tabs.TabPane key="3" tab="版本" />
+          <Tabs.TabPane key="3" tab="版本">
+            <Empty :image="Empty.PRESENTED_IMAGE_SIMPLE" />
+          </Tabs.TabPane>
         </Tabs>
       </div>
       <Dragger direction="Y" :next-min="300" :next-max="500" />
@@ -66,7 +68,7 @@
     onMounted,
   } from 'vue';
   import { BasicTable, TableAction, useTable } from '/@/components/Table';
-  import { Tabs } from 'ant-design-vue';
+  import { Tabs, Empty } from 'ant-design-vue';
   import { useGo } from '/@/hooks/web/usePage';
   import { useModal } from '/@/components/Modal';
   import { useMessage } from '/@/hooks/web/useMessage';

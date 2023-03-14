@@ -45,6 +45,7 @@ export class CodeWindow extends Disposable {
       this._win.loadFile(path.join(__dirname, '../index.html'));
     } else {
       const url = `http://${process.env['VITE_DEV_SERVER_HOST']}:${process.env['VITE_DEV_SERVER_PORT']}`;
+      //const url = 'https://www.google.com';
       this._win.loadURL(url);
     }
 

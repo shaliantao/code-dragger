@@ -1,7 +1,8 @@
 <template>
   <page-wrapper class="page-container">
     <div class="flex gap-2 mb-2">
-      <a-button @click="createGroup">创建分组</a-button>
+      <a-button @click="createGroup()">创建分组</a-button>
+      <a-button @click="uploadGroup()">上传分组</a-button>
     </div>
     <BasicTable @register="registerTable">
       <template #bodyCell="{ column, record }">
@@ -56,6 +57,10 @@
     openModal(true);
   }
 
+  async function uploadGroup() {
+    await groupSender.uploadGroup();
+  }
+
   async function getGroupList() {
     const list = await groupSender.getList();
     return list;
@@ -73,6 +78,7 @@
     const hide = createMessage.loading('发布中');
     await groupSender.publish(key);
     publishDisabled.value = false;
+    createMessage.success('发布成功');
     hide();
     reload();
   }

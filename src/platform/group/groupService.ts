@@ -69,8 +69,8 @@ export class GroupService extends Disposable implements IGroupService {
     const path = await this.groupManager.getWorkspace(key);
     return path;
   }
-  async setGroupTypes(key: string, typeItem: string): Promise<void> {
-    await this.groupManager.setGroupTypes(key, typeItem);
+  async setTypes(key: string, typeItem: string): Promise<void> {
+    await this.groupManager.setTypes(key, typeItem);
     this._onTypesChange.fire();
   }
   async getTypes(): Promise<string[]> {
@@ -93,5 +93,8 @@ export class GroupService extends Disposable implements IGroupService {
   }
   async checkRequiredGroups(deps: IRequiredGroupDep[]): Promise<void> {
     await this.groupManager.checkRequiredGroups(deps);
+  }
+  async uploadGroup() {
+    await this.groupManager.uploadGroup();
   }
 }

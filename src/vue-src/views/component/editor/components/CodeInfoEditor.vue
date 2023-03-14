@@ -8,10 +8,13 @@
         <Form.Item label="所属分组" name="group">
           <span> {{ form.group }} </span>
         </Form.Item>
+        <Form.Item label="方法名" name="group">
+          <span> {{ form.func }} </span>
+        </Form.Item>
       </Card>
     </div>
-    <div class="mb-2">
-      <Card v-if="inputs" title="输入">
+    <div v-if="inputs" class="mb-2">
+      <Card title="输入">
         <a-row :gutter="4" class="bg-gray-100 text-dark-50 mb-5px">
           <a-col :span="5">
             <span>类型</span>
@@ -53,8 +56,8 @@
         </a-row>
       </Card>
     </div>
-    <div class="mb-2">
-      <Card v-if="output" title="输出">
+    <div v-if="output" class="mb-2">
+      <Card title="输出">
         <a-row :gutter="4" class="bg-gray-100 text-dark-50 mb-5px">
           <a-col :span="7">
             <span>类型</span>
@@ -84,6 +87,9 @@
         <OutputSubEditor ref="subEditorRef" :output="output" />
       </Card>
     </div>
+    <Card v-show="!inputs && !output">
+      <Empty description="暂无输入输出" :image="Empty.PRESENTED_IMAGE_SIMPLE" />
+    </Card>
   </Form>
 </template>
 
@@ -92,15 +98,17 @@
    * TODO 计划将类型使用下拉菜单的形式展示，并支持动态增减
    */
   import { ref, unref, toRaw, toRefs, reactive, PropType, watch, watchEffect } from 'vue';
-  import { Form, Card } from 'ant-design-vue';
+  import { Form, Card, Empty } from 'ant-design-vue';
   import { IsEnum } from '@src/platform/common/enum';
   import type { InputsOutput } from '@src/platform/code/code';
   import { useComponentInfo } from '../hooks/useComponentInfo';
   import { useInputOutput } from '/@/hooks/code/useInputOutput';
   import OutputSubEditor from './OutputSubEditor.vue';
-  import TypeSelector from './TypeSelector.vue';
+  import { TypeSelector } from '/@/components/TypeSelector';
   import { InputArg, OutputArg } from '@src/platform/common/types';
   import componentSender from '/@/ipc/component';
+  import { watchDebounced } from '@vueuse/core';
+  import { useComponentTypes } from '../hooks/useComponentTypes';
 
   const props = defineProps({
     ioParams: {
@@ -127,14 +135,17 @@
     name: '未命名',
     diffPlatform: false,
     group: '',
+    func: '',
   });
 
   const { info } = useComponentInfo(group, func);
+  useComponentTypes(group);
   watch(info, (val) => {
     if (val) {
       form.name = val.name;
       form.diffPlatform = val.diffPlatform;
       form.group = val.group;
+      form.func = val.func;
     }
   });
 
@@ -150,8 +161,9 @@
   function customTypeChange(type: string, item?: Nullable<OutputArg> | InputArg) {
     item?.name === '' && (item.name = type);
   }
+
   function getOutput(): Nullable<OutputArg> {
-    if (output?.value) {
+    if (output.value) {
       const subData = unref(subEditorRef).getData();
       const { name, key, type } = output.value;
       return { name, key, type, ...subData };
@@ -160,16 +172,55 @@
     }
   }
 
-  function getValue() {
-    return {
-      inputs: unref(inputs),
-      output: getOutput(),
-      form: toRaw(form),
-    };
+  function getInputs() {
+    if (inputs.value) {
+      const newInputs = unref(inputs)?.map(({ defaultVal, isEnum, ...others }) => {
+        const value = isEnum === IsEnum.Yes ? defaultVal?.split(',')?.[0] : defaultVal;
+        return {
+          ...others,
+          defaultVal,
+          isEnum,
+          value,
+        };
+      });
+      return newInputs;
+    } else {
+      return null;
+    }
   }
-  defineExpose({
-    getValue,
-  });
+
+  watchDebounced(
+    () => form,
+    async (val) => {
+      await componentSender.setComponentInfo(unref(group), unref(func), {
+        ...toRaw(val),
+      });
+    },
+    {
+      debounce: 500,
+      deep: true,
+    },
+  );
+
+  watchDebounced(
+    output,
+    async () => {
+      await componentSender.setComponentInfo(unref(group), unref(func), {
+        output: getOutput(),
+      });
+    },
+    { debounce: 500, deep: true },
+  );
+
+  watchDebounced(
+    inputs,
+    async () => {
+      await componentSender.setComponentInfo(unref(group), unref(func), {
+        inputs: getInputs(),
+      });
+    },
+    { debounce: 500, deep: true },
+  );
 </script>
 
 <style scoped></style>

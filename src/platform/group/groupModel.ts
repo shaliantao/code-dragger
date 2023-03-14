@@ -16,6 +16,7 @@ import { SyncDescriptor } from '@base/instantiation/descriptors';
 import { IStatInfo, IPackageInfo, NewPackageInfo } from '@src/platform/project/project';
 import { Disposable } from '@base/common/lifecycle';
 import chokidar from 'chokidar';
+// eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
 import { memoize } from '@base/common/decorators';
 
 const COMP_FOLDER = 'components';
@@ -126,14 +127,14 @@ export class GroupModel extends Disposable {
     }
   }
   private async getTypes() {
-    this.types = await this.projectService.getGroupTypes(this.vFolderName);
+    this.types = await this.projectService.getTypes(this.vFolderName);
   }
   async setTypes(typeItem: string) {
     if (typeItem === '') {
       throw new Error('need a string type, but got empty type');
     }
     this.types.push(typeItem);
-    await this.projectService.setGroupTypes(this.vFolderName, this.types);
+    await this.projectService.setTypes(this.vFolderName, this.types);
   }
   get item() {
     return Object.assign({ version: this.version }, this.meta, this.stat, this.state);
@@ -159,8 +160,12 @@ export class GroupModel extends Disposable {
     const { fileStream } = await this.projectService.compress(this.folderName, this.versionFolder);
     return { fileStream };
   }
-  async decompress(md5, remoteStream): Promise<void> {
+  async decompress(md5: string, remoteStream): Promise<void> {
     await this.projectService.decompress(this.vFolderName, md5, remoteStream);
+  }
+  async setMd5(md5: string) {
+    this.md5 = md5;
+    await this.projectService.setFileContent(this.vFolderName, 'degit.md5', md5);
   }
   private async loadComponents() {
     const list = await this.projectService.getFolderList(path.join(this.vFolderName, COMP_FOLDER));

@@ -1,16 +1,9 @@
 <template>
   <page-wrapper class="h-full" contentClass="h-full">
-    <div class="flex p-2 h-40px">
-      <div class="flex-1"></div>
-      <div class="flex-1"></div>
-      <div class="w-100 text-right">
-        <a-button @click="onSubmit">保存</a-button>
-      </div>
-    </div>
-    <div class="flex h-[calc(100%-40px)]">
+    <div class="flex h-full">
       <div class="flex flex-1 flex-col">
         <div class="flex-1" ref="codeRef">
-          <Alert class="h-30px" :message="alertStr" :type="alertType" />
+          <Alert class="h-30px" :message="alertStr" :type="alertType" banner />
           <div style="position: absolute" :style="`height: ${heightRef}px; width: ${widthRef}px`">
             <MonacoEditor v-model="code" />
           </div>
@@ -27,7 +20,7 @@
       </div>
       <Dragger direction="Y" :next-min="500" :next-max="600" />
       <div class="w-80">
-        <CodeInfoEditor ref="infoEditorRef" :ioParams="ioParams" :group="group" :func="func" />
+        <CodeInfoEditor :ioParams="ioParams" :group="group" :func="func" />
       </div>
     </div>
   </page-wrapper>
@@ -38,10 +31,9 @@
   };
 </script>
 <script lang="ts" setup>
-  import { ref, unref, toRefs, watchEffect, ComputedRef, computed, onMounted } from 'vue';
-  import { useResizeObserver } from '@vueuse/core';
+  import { ref, unref, toRefs, watchEffect, watch, ComputedRef, computed, onMounted } from 'vue';
+  import { useDebounceFn, useResizeObserver } from '@vueuse/core';
   import { Alert, Tabs } from 'ant-design-vue';
-  import { IsEnum } from '@src/platform/common/enum';
   import Terminal from '/@/components/Terminal';
   import { Description, DescItem, useDescription } from '/@/components/Description/index';
   import componentSender from '/@/ipc/component';
@@ -66,7 +58,6 @@
   const { group, func } = toRefs(props);
   const path = ref('');
   const activeKey = '1';
-  const infoEditorRef = ref();
   const dependencies = ref();
   const codeRef = ref();
   const code = ref('');
@@ -98,26 +89,14 @@
     code.value = res;
   });
 
-  const { alertStr, alertType, ioParams } = useCodeParse(code);
+  watch(
+    code,
+    useDebounceFn(async () => {
+      await componentSender.saveCode(unref(group), unref(func), unref(code));
+    }, 500),
+  );
 
-  async function onSubmit() {
-    const { inputs, output, form } = unref(infoEditorRef)?.getValue();
-    const newInputs = inputs?.map(({ defaultVal, isEnum, ...others }) => {
-      const value = isEnum === IsEnum.Yes ? defaultVal?.split(',')?.[0] : defaultVal;
-      return {
-        ...others,
-        defaultVal,
-        isEnum,
-        value,
-      };
-    });
-    await componentSender.saveCode(unref(group), unref(func), unref(code));
-    await componentSender.setComponentInfo(unref(group), unref(func), {
-      inputs: newInputs || null,
-      output,
-      ...form,
-    });
-  }
+  const { alertStr, alertType, ioParams } = useCodeParse(code);
 
   async function getPath() {
     path.value = await componentSender.getWorkspace(unref(group), unref(func));

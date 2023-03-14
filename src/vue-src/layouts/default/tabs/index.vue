@@ -10,7 +10,7 @@
       @change="handleChange"
       @edit="handleEdit"
     >
-      <template v-for="item in getTabsState" :key="item.query ? item.fullPath : item.path">
+      <template v-for="item in tabList" :key="item.query ? item.fullPath : item.path">
         <TabPane :closable="!(item && item.meta && item.meta.affix)">
           <template #tab>
             <TabContent :tabItem="item" />
@@ -27,7 +27,7 @@
   </div>
 </template>
 <script lang="ts">
-  import type { RouteLocationNormalized, RouteMeta } from 'vue-router';
+  import { RouteLocationNormalized, RouteMeta, useRouter } from 'vue-router';
 
   import { defineComponent, computed, unref, ref } from 'vue';
 
@@ -46,8 +46,6 @@
 
   import { REDIRECT_NAME } from '/@/router/constant';
   import { listenerRouteChange } from '/@/logics/mitt/routeChange';
-
-  import { useRouter } from 'vue-router';
 
   export default defineComponent({
     name: 'MultipleTabs',
@@ -71,11 +69,11 @@
       const go = useGo();
       const { getShowQuick, getShowRedo, getShowFold } = useMultipleTabSetting();
 
-      const getTabsState = computed(() => {
+      const tabList = computed(() => {
         return tabStore.getTabList.filter((item) => !item.meta?.hideTab);
       });
 
-      const unClose = computed(() => unref(getTabsState).length === 1);
+      const unClose = computed(() => unref(tabList).length === 1);
 
       const getWrapClass = computed(() => {
         return [
@@ -129,7 +127,7 @@
         handleEdit,
         handleChange,
         activeKeyRef,
-        getTabsState,
+        tabList,
         getShowQuick,
         getShowRedo,
         getShowFold,

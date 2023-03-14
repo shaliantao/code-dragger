@@ -42,11 +42,12 @@ export interface IGroupService {
   setGroupInfo(key: string, info: Partial<IGroupMeta>): Promise<void>;
   getGroupInfo(key: string): Promise<IGroupInfo>;
   getWorkspace(key: string): Promise<string>;
-  setGroupTypes(key: string, typeItem: string): Promise<void>;
+  setTypes(key: string, typeItem: string): Promise<void>;
   getTypes(): Promise<string[]>;
   getPackageInfo(key: string): Promise<IPackageInfo>;
   publish(key: string): Promise<void>;
   getVersions(key: string): Promise<object[]>;
   syncEnabledGroups(): Promise<void>;
+  uploadGroup(): Promise<void>;
   checkRequiredGroups(deps: IRequiredGroupDep[]);
 }

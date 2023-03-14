@@ -91,6 +91,15 @@ export abstract class AbstractProjectService<T extends object> implements IProje
     const metaInfo = await this.fileService.readJson(metaPath);
     return metaInfo as T;
   }
+  async setTypes(folderName: string, typesArr: string[]): Promise<void> {
+    const typesPath = path.join(this.projectRootPath, folderName, 'types.json');
+    await this.fileService.writeJson(typesPath, typesArr);
+  }
+  async getTypes(folderName: string): Promise<string[]> {
+    const typesPath = path.join(this.projectRootPath, folderName, 'types.json');
+    const typesArr = (await this.fileService.readJson(typesPath)) as string[];
+    return typesArr;
+  }
   // 设置项目元信息
   async setPackageInfo(
     folderName: string,
@@ -120,7 +129,9 @@ export abstract class AbstractProjectService<T extends object> implements IProje
   }
   // 保存至指定文件
   async setFileContent(folderName: string, fileName: string, str: string): Promise<void> {
-    const filePath = path.join(this.projectRootPath, folderName, fileName);
+    const forderPath = path.join(this.projectRootPath, folderName);
+    await this.fileService.ensureDir(forderPath);
+    const filePath = path.join(forderPath, fileName);
     await this.fileService.writeFile(filePath, str);
   }
   // 从指定文件获取内容

@@ -2,16 +2,23 @@
   <Tabs v-if="data" v-model:activeKey="activeKey" type="card" class="h-full">
     <Tabs.TabPane key="basic" tab="基础">
       <div class="h-full overflow-y-auto">
+        <div class="mb-2">
+          <Card title="基本信息">
+            <Form.Item label="组件名称" name="name">
+              <a-input autocomplete="off" v-model:value="data.name" />
+            </Form.Item>
+          </Card>
+        </div>
         <div class="mb-2 h-2/3">
           <Card size="small" title="自定义代码" class="h-full" :body-style="{ height: '100%' }">
-            <Alert class="h-30px" :message="alertStr" :type="alertType" />
+            <Alert class="h-30px" :message="alertStr" :type="alertType" :banner="true" />
             <div class="h-[calc(100%-60px)]">
               <MonacoEditor v-model="data.code" />
             </div>
           </Card>
         </div>
-        <div class="mb-2">
-          <Card v-if="inputs" title="输入">
+        <div v-if="inputs" class="mb-2">
+          <Card title="输入">
             <a-row :gutter="4" class="bg-gray-100 text-dark-50 mb-5px">
               <a-col :span="5">
                 <span>类型</span>
@@ -52,8 +59,8 @@
             </a-row>
           </Card>
         </div>
-        <div class="mb-2">
-          <Card v-if="output" title="输出">
+        <div v-if="output" class="mb-2">
+          <Card title="输出">
             <a-row :gutter="4" class="bg-gray-100 text-dark-50 mb-5px">
               <a-col :span="7">
                 <span>类型</span>
@@ -83,6 +90,9 @@
             <OutputSubEditor ref="subEditorRef" :output="output" />
           </Card>
         </div>
+        <Card v-show="!inputs && !output">
+          <Empty description="暂无输入输出" :image="Empty.PRESENTED_IMAGE_SIMPLE" />
+        </Card>
       </div>
     </Tabs.TabPane>
     <Tabs.TabPane key="advance" tab="高级">
@@ -107,12 +117,12 @@
 <script setup lang="ts">
   import { computed, ref, toRef, unref, watchEffect } from 'vue';
   import { cloneDeep } from 'lodash-es';
-  import { Card, Tabs, Alert } from 'ant-design-vue';
+  import { Card, Tabs, Alert, Form, Empty } from 'ant-design-vue';
   import { ErrorHandling } from '@src/platform/common/enum';
   import { CodeCommand, InputArg, OutputArg } from '@src/platform/common/types';
   import SmartInput from '../SmartInput.vue';
   import OutputSubEditor from '/@/views/component/editor/components/OutputSubEditor.vue';
-  import TypeSelector from '/@/views/component/editor/components/TypeSelector.vue';
+  import { TypeSelector } from '/@/components/TypeSelector';
   import { useCodeParse } from '/@/hooks/code/useCodeParse';
   import { useInputOutput } from '/@/hooks/code/useInputOutput';
   import { createAsyncComponent } from '/@/utils/factory/createAsyncComponent';

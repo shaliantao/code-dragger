@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { FloatWindow } from '@src/floatWindow';
+import { FloatWindow } from '@src/window/floatWindow';
 import { ILogService } from '@base/log/logService';
 import { IInstantiationService } from '@base/instantiation/instantiation';
 import { createDecorator } from '@base/instantiation/instantiation';
@@ -22,6 +22,8 @@ import { CommandNode } from '../common/types';
 import { formatToDateTime } from '/@/utils/dateUtil';
 import dayjs from 'dayjs';
 
+chalk.level = 2;
+
 export const IExecutorService = createDecorator<IExecutorService>('executorService');
 
 export interface IExecutorService {
@@ -40,7 +42,7 @@ export interface IExecutorService {
 
 export class ExecutorService extends Disposable implements IExecutorService {
   readonly _serviceBrand: undefined;
-  private _floatWin: FloatWindow | null;
+  private _floatWin: FloatWindow | null = null;
   private _app: Nullable<AppExecutor> = null;
   private readonly _onRunStateChange = this._register(new Emitter<APP_RUN_STATE>());
   readonly onRunStateChange: Event<APP_RUN_STATE> = this._onRunStateChange.event;
@@ -59,8 +61,13 @@ export class ExecutorService extends Disposable implements IExecutorService {
     @ITerminalService private readonly terminalService: ITerminalService,
   ) {
     super();
-    this._floatWin = this.instantiationService.createInstance(FloatWindow);
-    this._floatWin.createWindow();
+  }
+  private showFloatWin() {
+    if (this._floatWin === null) {
+      this._floatWin = this.instantiationService.createInstance(FloatWindow);
+      this._floatWin.createWindow();
+    }
+    this._floatWin?.showInactive();
   }
   // 启动开发模式应用，运行编辑中状态的应用
   async startDevApp(appId: string, appFlow: CommandNode[]) {
@@ -80,7 +87,7 @@ export class ExecutorService extends Disposable implements IExecutorService {
     if (appModel) {
       const appFlow = await appModel.getAppFlow();
       await this.appService.initBeforeStart(appModel, appFlow);
-      this._floatWin?.showInactive();
+      this.showFloatWin();
       await this.start(appModel);
     } else {
       throw new Error('app not found');
@@ -114,9 +121,6 @@ export class ExecutorService extends Disposable implements IExecutorService {
   private _initListener(appModel: AppModel, print?: IPrint) {
     this._app?.onAppStart((data) => {
       this._onAppStart.fire({ meta: appModel.item, ...data });
-      if (print) {
-        print.onAppStart({ meta: appModel.item, ...data });
-      }
     });
     this._app?.onRunStateChange((state) => {
       this._onRunStateChange.fire(state);
@@ -141,21 +145,11 @@ export class ExecutorService extends Disposable implements IExecutorService {
       this._app = null;
       this._onAppEnd.fire({ meta: appModel.item, ...data });
       //this._floatWin?.hide();
-      //setTimeout(() => this._floatWin?.hide(), 2000);
+      setTimeout(() => this._floatWin?.hide(), 2000);
     });
   }
   private printToTerminal(root: string): IPrint {
     return {
-      onAppStart: (data: IAppStartWithMeta) => {
-        this.terminalService.printTerminalData(
-          root,
-          chalk.white(
-            `\r\n${chalk.bold(
-              `[${formatToDateTime(dayjs(data.startTime))}] 开始运行: ${data.meta.name}`,
-            )} \r\n`,
-          ),
-        );
-      },
       onAppStateChange: (state: APP_RUN_STATE) => {
         this.terminalService.printTerminalData(
           root,
@@ -163,15 +157,17 @@ export class ExecutorService extends Disposable implements IExecutorService {
         );
       },
       onCommandStart: (data: ICommandStart) => {
-        const inputs = data.inputs?.map(
-          (input) => `${input.name || '未命名'}: ${input.value || '未赋值'}`,
-        );
-        const inputsText = Array.isArray(inputs) ? `\r\n\r\n${inputs.join('\r\n')}` : '暂无输入';
+        const inputs =
+          Array.isArray(data.inputs) &&
+          data.inputs?.map((input) => `${input.name || '未命名'}: ${input.value || '未赋值'}`);
+        const inputsText = Array.isArray(inputs) ? `\r\n${inputs.join('\r\n')}` : '暂无输入';
         this.terminalService.printTerminalData(
           root,
-          chalk.blue('\r\n--------------------------------------------------------------\r\n'),
+          chalk.hex('#3198FA')(
+            '\r\n--------------------------------------------------------------\r\n',
+          ),
         );
-        const title = chalk.blueBright(
+        const title = chalk.hex('#54A0FA')(
           `\r\n${chalk.bold(`[${formatToDateTime(dayjs(data.startTime))}] 开始: `)} ${
             data.meta?.name
           }\r\n${chalk.italic(`\r\n节点输入：${inputsText}\r\n`)}`,
@@ -181,10 +177,11 @@ export class ExecutorService extends Disposable implements IExecutorService {
       onCommandData: (data: ICommandData) => {
         let text;
         if (data.code === COMMAND_EXEC_STATUS.SUCCESS) {
+          const output = data.data.result ? JSON.stringify(data.data.result) : '暂无输出';
           text = chalk.greenBright(
             `\r\n${chalk.bold(
               `[${formatToDateTime(dayjs(data.data.endTime))}] 成功: `,
-            )}\r\n${chalk.italic(`\r\n节点输出：${data.data.result || '暂无输出'}\r\n`)}
+            )}\r\n${chalk.italic(`\r\n节点输出：${output}\r\n`)}
             `,
           );
         } else if (data.code === COMMAND_EXEC_STATUS.ERROR) {
@@ -196,6 +193,10 @@ export class ExecutorService extends Disposable implements IExecutorService {
         } else if (data.code === COMMAND_EXEC_STATUS.LOG) {
           text = chalk.white(
             `\r\n[${formatToDateTime(dayjs(data.data.time))}] 日志: ${data.data.info}\r\n`,
+          );
+        } else if (data.code === COMMAND_EXEC_STATUS.ERROR_LOG) {
+          text = chalk.hex('#FAAD14')(
+            `\r\n[${formatToDateTime(dayjs(data.data.time))}] 报错: ${data.data.info}\r\n`,
           );
         }
         this.terminalService.printTerminalData(root, text);

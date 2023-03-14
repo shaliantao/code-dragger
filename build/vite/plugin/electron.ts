@@ -15,7 +15,7 @@ export function configElectronPlugin() {
           build: {
             sourcemap: true,
             rollupOptions: {
-              external: ['node-pty', 'form-data', 'axios', 'chalk'],
+              external: ['node-pty', 'form-data', 'axios'],
             },
           },
           resolve: {

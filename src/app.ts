@@ -1,6 +1,6 @@
 import path from 'path';
 import { app, BrowserWindow, Menu } from 'electron';
-import { CodeWindow } from '@src/window';
+import { CodeWindow } from '@src/window/window';
 import { Server as ElectronIPCServer } from '@base/ipc/electron-main/ipc.electron-main';
 import { createChannelReceiver } from '@base/ipc/common/ipc';
 import { ILogService } from '@base/log/logService';
@@ -50,7 +50,7 @@ export class CodeApplication {
     this.registerListeners();
   }
   async startup() {
-    this.logService.debug('Starting Smart Rpa');
+    this.logService.debug('Starting Code Dragger');
     this.logService.debug('cwd: ' + process.cwd());
     this.logService.debug('dirname: ' + path.join(__dirname));
     this.printEnviromentLog();

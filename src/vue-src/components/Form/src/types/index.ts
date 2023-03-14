@@ -110,4 +110,5 @@ export type ComponentType =
   | 'Render'
   | 'Slider'
   | 'Rate'
-  | 'Divider';
+  | 'Divider'
+  | 'TypeSelector';

@@ -19,7 +19,7 @@
       </a-button>
     </div>
   </div>
-  <div class="w-100 text-right">
+  <div v-if="!isView" class="w-100 text-right">
     <a-button @click="saveApp()">保存</a-button>
   </div>
 </template>
@@ -35,6 +35,10 @@
   const props = defineProps({
     uuid: {
       type: String,
+      required: true,
+    },
+    isView: {
+      type: Boolean,
       required: true,
     },
     commandFlow: {
@@ -58,7 +62,11 @@
   }
 
   async function startApp() {
-    await executorSender.startDevApp(props.uuid, props.commandFlow);
+    try {
+      await executorSender.startDevApp(props.uuid, props.commandFlow);
+    } catch (err) {
+      console.log(`error${err}`);
+    }
   }
   async function stopApp() {
     try {

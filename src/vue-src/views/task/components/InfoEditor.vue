@@ -1,5 +1,11 @@
 <template>
-  <BasicModal v-bind="$attrs" @register="register" title="新建任务" @cancel="close" @ok="save">
+  <BasicModal
+    v-bind="$attrs"
+    @register="register"
+    :title="idRef ? '编辑任务' : '新建任务'"
+    @cancel="close"
+    @ok="save"
+  >
     <div class="pt-3px pr-3px">
       <BasicForm @register="registerForm" :model="modelRef">
         <template #cycle="{ model, field }">
@@ -20,6 +26,7 @@
   import { Dayjs } from 'dayjs';
   import { formatToDateTime } from '/@/utils/dateUtil';
   import taskSender from '/@/ipc/task';
+  import executorSender from '/@/ipc/executor';
 
   export default defineComponent({
     components: { BasicModal, BasicForm, CycleSelector },
@@ -70,7 +77,11 @@
             appId: info.appId,
             execMode: info.execMode,
           };
-          if (info.execMode === ExecMode.Cycle) {
+          if (info.execMode === ExecMode.Quick) {
+            executorSender.startTaskApp(info.appId);
+            close();
+            return;
+          } else if (info.execMode === ExecMode.Cycle) {
             const [validateStart, validateEnd]: [Dayjs, Dayjs] = info.validateRange;
             Object.assign(data, {
               cycle: info.cycle,
@@ -107,7 +118,7 @@
         clearValidate();
       }
 
-      return { register, registerForm, modelRef, save, close };
+      return { register, registerForm, modelRef, save, close, idRef };
     },
   });
 </script>

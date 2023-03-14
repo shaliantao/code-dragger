@@ -94,7 +94,7 @@
     if (task.type === CommandType.Else) {
       return;
     }
-    openDrawer(true, { task, parent });
+    openDrawer(true, { task, parent, uuid: unref(props.uuid) });
   }
 
   watchEffect(async () => {

@@ -1,6 +1,6 @@
 import { createDecorator as createServiceDecorator } from '@base/instantiation/instantiation';
 import { Event } from '@base/common/event';
-import type { AxiosRequestConfig, AxiosInstance, AxiosResponse } from 'axios';
+import type { AxiosRequestConfig, AxiosInstance } from 'axios';
 import type { RequestOptions, UploadFileParams } from '/#/axios';
 
 export const IHttpService = createServiceDecorator<IHttpService>('httpService');
@@ -9,10 +9,7 @@ export interface IHttpService {
   readonly _serviceBrand: undefined;
   readonly onLogout: Event<void>;
   getAxios(): AxiosInstance;
-  uploadFile<T = any>(
-    config: AxiosRequestConfig,
-    params: UploadFileParams,
-  ): Promise<AxiosResponse<T, any>>;
+  uploadFile<T = any>(config: AxiosRequestConfig, params: UploadFileParams): Promise<T>;
   get<T = any>(config: AxiosRequestConfig, options?: RequestOptions): Promise<T>;
 
   post<T = any>(config: AxiosRequestConfig, options?: RequestOptions): Promise<T>;

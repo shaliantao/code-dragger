@@ -75,8 +75,8 @@ export interface CommandCommon {
   name: string;
 }
 export interface CodeCommand extends CommandCommon {
-  type: CommandType.Code;
   formType: CommandType.Code;
+  type: CommandType.Code;
   code: string;
   errorHandling: ErrorHandling;
   inputs?: InputArg[];

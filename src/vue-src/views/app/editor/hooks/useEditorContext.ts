@@ -1,9 +1,11 @@
 import type { InjectionKey, Ref } from 'vue';
 import { OutputArg } from '@src/platform/common/types';
 import { createContext, useContext } from '/@/hooks/core/useContext';
+import { IGlobalVar } from '@src/platform/app/app';
 
 export interface CommandEditorContextProps {
   outputNodes: Ref<OutputArg[]>;
+  globalVars: Ref<IGlobalVar[]>;
   autoSave: () => void;
 }
 

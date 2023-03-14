@@ -9,6 +9,7 @@
   import { defineComponent, ref } from 'vue';
   import { useGo } from '/@/hooks/web/usePage';
   import appSender from '/@/ipc/app';
+  import { OpEnum } from '/@/enums/opEnum';
   import { BasicModal, useModalInner } from '/@/components/Modal';
   import { BasicForm, useForm } from '/@/components/Form/index';
   import { schemas } from '../data';
@@ -37,7 +38,7 @@
           const uuid = await appSender.newApp(info);
           go({
             name: 'AppEditor',
-            params: { uuid },
+            params: { uuid, opType: OpEnum.EDIT },
           });
           close();
         } catch (err) {

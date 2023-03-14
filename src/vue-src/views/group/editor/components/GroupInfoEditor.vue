@@ -11,13 +11,13 @@
         <Form.Item label="版本" name="version">
           <span> v{{ groupInfo.version }} </span>
         </Form.Item>
-        <Form.Item label="是否发布" name="group">
+        <Form.Item label="已发布" name="group">
           <span> {{ groupInfo.published }} </span>
         </Form.Item>
-        <Form.Item label="是否启用" name="group">
+        <Form.Item label="已启用" name="group">
           <span> {{ groupInfo.enabled }} </span>
         </Form.Item>
-        <Form.Item label="是否区分平台" name="diffPlatform">
+        <Form.Item label="区分平台" name="diffPlatform">
           <span> {{ groupInfo.diffPlatform }} </span>
         </Form.Item>
         <Form.Item label="描述" name="desc">
