@@ -59,6 +59,9 @@ export class SubProcess extends Disposable {
           this._onStderrData.fire(data);
         });
     }
+    child.on('data', (data) => {
+      this.logService.debug(data);
+    });
 
     child.on('close', (code, signal) => {
       this.kill(KILL_TYPE.KILL);

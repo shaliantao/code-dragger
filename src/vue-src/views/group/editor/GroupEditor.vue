@@ -39,7 +39,24 @@
             <Description @register="register" class="my-4" />
           </Tabs.TabPane>
           <Tabs.TabPane key="3" tab="版本">
-            <Empty :image="Empty.PRESENTED_IMAGE_SIMPLE" />
+            <BasicTable @register="registerVersionTable">
+              <template #bodyCell="{ column, record }">
+                <template v-if="column.dataIndex === 'action'">
+                  <TableAction
+                    :actions="[
+                      {
+                        label: '编辑',
+                        onClick: handleEdit.bind(null, record),
+                      },
+                      {
+                        label: '启用',
+                        onClick: handleDel.bind(null, record),
+                      },
+                    ]"
+                  />
+                </template>
+              </template>
+            </BasicTable>
           </Tabs.TabPane>
         </Tabs>
       </div>
@@ -68,7 +85,7 @@
     onMounted,
   } from 'vue';
   import { BasicTable, TableAction, useTable } from '/@/components/Table';
-  import { Tabs, Empty } from 'ant-design-vue';
+  import { Tabs } from 'ant-design-vue';
   import { useGo } from '/@/hooks/web/usePage';
   import { useModal } from '/@/components/Modal';
   import { useMessage } from '/@/hooks/web/useMessage';
@@ -79,7 +96,7 @@
   import { Description, DescItem, useDescription } from '/@/components/Description/index';
   import NewCompEditor from './components/NewCompEditor.vue';
   import GroupInfoEditor from './components/GroupInfoEditor.vue';
-  import { getColumns } from './data';
+  import { getColumns, getVersionColumns } from './data';
 
   const props = defineProps({
     groupKey: {
@@ -96,8 +113,7 @@
   const path = ref('');
   const infoEditorRef = ref();
   const dependencies = ref();
-  const versions = ref();
-  const activeKey = '1';
+  const activeKey = '3';
 
   const schema: ComputedRef<DescItem[]> = computed(() => {
     return Object.keys(dependencies.value || {}).map((key) => ({
@@ -113,12 +129,11 @@
 
   onActivated(() => {
     reload();
+    reloadVersions();
   });
   watchEffect(async () => {
     const info = await groupSender.getPackageInfo(unref(groupKey));
     dependencies.value = info.dependencies;
-    const res = await groupSender.getVersions(unref(groupKey));
-    versions.value = res;
   });
 
   async function createComponent() {
@@ -167,10 +182,26 @@
     return list;
   }
 
+  async function getGroupVersions() {
+    const list = await groupSender.getVersions(unref(groupKey));
+    return list.versions;
+  }
+
   const [registerTable, { reload }] = useTable({
     pagination: false,
     api: getGroupComponents,
     columns: getColumns(),
+    rowKey: 'id',
+    actionColumn: {
+      width: 160,
+      title: '操作',
+      dataIndex: 'action',
+    },
+  });
+  const [registerVersionTable, { reload: reloadVersions }] = useTable({
+    pagination: false,
+    api: getGroupVersions,
+    columns: getVersionColumns(),
     rowKey: 'id',
     actionColumn: {
       width: 160,

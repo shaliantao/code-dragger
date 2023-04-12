@@ -215,6 +215,8 @@ export class GroupManager {
       const groupInfo = await this.httpService.uploadFile(
         {
           url: 'group',
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
         },
         {
           data: {
@@ -246,6 +248,8 @@ export class GroupManager {
         {
           url,
           method: 'PUT',
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
         },
         {
           data: {
@@ -287,6 +291,8 @@ export class GroupManager {
         {
           url: 'component',
           method: 'PUT',
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
         },
         {
           data: {

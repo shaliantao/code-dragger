@@ -71,3 +71,37 @@ export function getColumns(): BasicColumn[] {
     },
   ];
 }
+
+export function getVersionColumns(): BasicColumn[] {
+  return [
+    {
+      title: '版本',
+      dataIndex: 'version',
+    },
+    {
+      title: '作者',
+      dataIndex: 'author',
+      customRender: ({ value }) => {
+        return value.username;
+      },
+    },
+    {
+      title: '发版日志',
+      dataIndex: 'changeLog',
+    },
+    {
+      title: '启用中',
+      dataIndex: 'enabled',
+      customRender: ({ text }) => {
+        return text ? '是' : '否';
+      },
+    },
+    {
+      title: '编辑中',
+      dataIndex: 'editable',
+      customRender: ({ text }) => {
+        return text ? '是' : '否';
+      },
+    },
+  ];
+}
