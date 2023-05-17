@@ -5,9 +5,6 @@
   appId: 'code.dragger',
   productName: 'Code Dragger',
   asar: true,
-  electronDownload: {
-    mirror: "https://npm.taobao.org/mirrors/electron/"
-  },
   directories: {
     output: 'release/${version}',
   },
