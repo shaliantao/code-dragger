@@ -8,7 +8,6 @@ cache:
 
 install:
   - ps: Install-Product node 16 x64
-  - npm config set registry https://registry.npmmirror.com
   - npm install yarn -g
   - yarn install
 
