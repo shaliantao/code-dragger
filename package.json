@@ -1,6 +1,6 @@
 {
   "name": "code-dragger",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "code-dragger",
   "main": "dist/electron/main.js",
   "author": "shashaxian",
@@ -9,9 +9,7 @@
   "scripts": {
     "dev": "vite dev",
     "build:web": "rimraf ./dist && cross-env NODE_ENV=production vite build && esno ./build/script/postBuild.ts",
-    "build": "rimraf ./dist && rimraf ./release && cross-env NODE_ENV=production npm run build:web && electron-builder --publish onTagOrDraft",
-    "rebuild": "electron-rebuild -f -w node-pty",
-    "postinstall": "npm run rebuild",
+    "build": "rimraf ./dist && rimraf ./release && cross-env NODE_ENV=production npm run build:web && electron-builder",
     "type:check": "vue-tsc --noEmit --skipLibCheck",
     "log": "conventional-changelog -p angular -i CHANGELOG.md -s",
     "clean:lib": "rimraf node_modules",
